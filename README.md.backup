@@ -28,17 +28,15 @@ Traditional DEX swaps are inefficient:
 
 ## 🎬 Live Demo
 
-**🌐 [Try Live Demo - No Setup Required];(https://empowertours.github.io/agent-swarm-consensus-hackathon/)**
-
-Click **Start Auction** and watch 3 AI agents compete in real-time! 🚀
-
-### Run Locally
+**Try the interactive demo:**
 
 ```bash
 cd agents
 python3 -m http.server 8080
 # Open http://localhost:8080/live-demo-ui.html
 ```
+
+Click "Start Auction" and watch 3 AI agents compete in real-time!
 
 ---
 
@@ -131,8 +129,6 @@ agent-swarm-clean/
 │   └── package.json               # Dependencies
 ├── deployment/
 │   └── DEPLOYED.md                # Deployment records & verification
-├── docs/
-│   └── index.html                 # GitHub Pages demo
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -191,7 +187,6 @@ forge coverage
 ✅ DeFi application for efficient trading  
 ✅ Smart contract deployed & verified  
 ✅ Open source repository  
-✅ Live demo on GitHub Pages  
 ✅ Demo video (to be added)  
 ✅ Technical documentation  
 ✅ Canva presentation (to be added)
@@ -203,12 +198,11 @@ forge coverage
 Create `.env` file:
 
 ```bash
-COINGECKO_API_KEY=your_key_here
-PRIVATE_KEY=0x...your_wallet_key
+COINGECKO_API_KEY=your_api_key_here
 MONAD_RPC_URL=https://testnet-rpc.monad.xyz
 ```
 
-**Never commit API keys or private keysecho ___BEGIN___COMMAND_OUTPUT_MARKER___ ; PS1= ; PS2= ; unset HISTFILE ; EC=0 ; echo ___BEGIN___COMMAND_DONE_MARKER___0 ; }*
+**Never commit API keys or private keys!**
 
 ---
 
@@ -226,7 +220,6 @@ Apache 2.0 - See [LICENSE](LICENSE)
 
 ## 🔗 Links
 
-- **Live Demo:** https://empowertours.github.io/agent-swarm-consensus-hackathon/
 - **Hackathon:** https://consensus-hongkong.coindesk.com/hackathon/
 - **Monad Docs:** https://docs.monad.xyz
 - **LayerZero:** https://layerzero.network
