@@ -516,6 +516,7 @@
         
         let provider, signer, contract;
         let connectedAccount = null;
+        let useMobileMode = false; // Fallback for when ethers.js fails
         
         // Debug logger for mobile
         function debugLog(message, isError = false) {
@@ -531,6 +532,7 @@
         async function connectWallet() {
             // Debug: Check what wallet providers are available
             debugLog('=== WALLET CONNECTION START ===');
+            debugLog('ethers library loaded: ' + (typeof ethers !== 'undefined'));
             debugLog('window.ethereum exists: ' + !!window.ethereum);
             
             if (!window.ethereum) {
@@ -556,48 +558,46 @@
                 connectedAccount = accounts[0];
                 debugLog('✓ Connected: ' + connectedAccount.substring(0, 10) + '...');
                 
-                // Step 2: Create provider (this can fail on mobile)
+                // Step 2: Try to create provider (mobile fallback if it fails)
                 debugLog('Step 2: Creating ethers provider...');
                 try {
+                    if (typeof ethers === 'undefined') {
+                        throw new Error('ethers.js not loaded');
+                    }
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    debugLog('✓ Provider created');
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                    debugLog('✓ Ethers.js mode enabled');
+                    useMobileMode = false;
                 } catch (providerError) {
-                    debugLog('❌ Provider creation failed: ' + providerError.message, true);
-                    throw new Error('Failed to create Web3 provider. Try desktop browser.');
+                    debugLog('⚠ Ethers.js failed, using mobile mode: ' + providerError.message);
+                    useMobileMode = true;
+                    // We'll send raw transactions without ethers.js
                 }
                 
-                // Step 3: Get signer
-                debugLog('Step 3: Getting signer...');
-                signer = provider.getSigner();
-                debugLog('✓ Signer obtained');
-                
-                // Step 4: Create contract
-                debugLog('Step 4: Creating contract instance...');
-                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                debugLog('✓ Contract created');
-                
-                // Step 5: Check network (might fail on mobile)
-                debugLog('Step 5: Checking network...');
-                let network;
+                // Step 3: Check network
+                debugLog('Step 3: Checking network...');
+                let currentChainId;
                 try {
-                    network = await provider.getNetwork();
-                    debugLog('✓ Network chainId: ' + network.chainId);
-                } catch (networkError) {
-                    debugLog('⚠ Network check failed (will try to switch): ' + networkError.message);
-                    // Continue anyway - we'll try to switch/add network
-                    network = { chainId: 0 };
+                    currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    debugLog('✓ Current chainId: ' + currentChainId);
+                } catch (e) {
+                    debugLog('⚠ Could not get chainId: ' + e.message);
+                    currentChainId = '0x0';
                 }
                 
                 const networkBadge = document.getElementById('networkBadge');
                 
-                if (network.chainId === 10143) {
+                if (currentChainId === MONAD_CHAIN_ID) {
                     networkBadge.textContent = 'Monad Testnet';
                     networkBadge.classList.remove('wrong');
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('setupInfo').style.display = 'none';
+                    debugLog('✓ Already on Monad Testnet');
                 } else {
                     networkBadge.textContent = 'Wrong Network';
                     networkBadge.classList.add('wrong');
+                    debugLog('⚠ Wrong network, attempting to switch...');
                     await switchToMonad();
                 }
                 
@@ -678,7 +678,7 @@
         }
         
         async function startRealAuction() {
-            if (!contract) {
+            if (!connectedAccount) {
                 alert('Please connect your wallet first!');
                 return;
             }
@@ -694,29 +694,71 @@
             
             try {
                 const amount = document.getElementById('amountInput').value;
-                const amountWei = ethers.utils.parseEther(amount);
+                let txHash;
                 
-                // Post intent to smart contract
-                const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-                const ETH_CHAIN_ID = 1;
-                const minOut = ethers.utils.parseEther('0'); // No minimum for demo
+                if (useMobileMode) {
+                    debugLog('📱 Using mobile mode (raw transactions)');
+                    
+                    // Convert amount to wei manually (amount * 10^18)
+                    const amountWei = '0x' + (BigInt(Math.floor(parseFloat(amount) * 1e18))).toString(16);
+                    
+                    // Encode function call manually
+                    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+                    const ETH_CHAIN_ID_HEX = '0x0000000000000000000000000000000000000000000000000000000000000001';
+                    const MIN_OUT = '0x0000000000000000000000000000000000000000000000000000000000000000';
+                    
+                    // Function signature: postIntent(address,address,uint32,uint256)
+                    const functionSig = '0x8a4f1be3'; // First 4 bytes of keccak256("postIntent(address,address,uint32,uint256)")
+                    
+                    const data = functionSig +
+                        ZERO_ADDRESS.substring(2).padStart(64, '0') +
+                        ZERO_ADDRESS.substring(2).padStart(64, '0') +
+                        '0000000000000000000000000000000000000000000000000000000000000001' +
+                        MIN_OUT.substring(2).padStart(64, '0');
+                    
+                    debugLog('Sending raw transaction...');
+                    txHash = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: connectedAccount,
+                            to: CONTRACT_ADDRESS,
+                            value: amountWei,
+                            data: data
+                        }]
+                    });
+                    
+                    debugLog('✓ TX sent: ' + txHash);
+                    
+                } else {
+                    debugLog('💻 Using ethers.js mode');
+                    const amountWei = ethers.utils.parseEther(amount);
+                    
+                    // Post intent to smart contract
+                    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+                    const ETH_CHAIN_ID = 1;
+                    const minOut = ethers.utils.parseEther('0'); // No minimum for demo
+                    
+                    const tx = await contract.postIntent(
+                        ZERO_ADDRESS,
+                        ZERO_ADDRESS,
+                        ETH_CHAIN_ID,
+                        minOut,
+                        { value: amountWei }
+                    );
+                    
+                    txHash = tx.hash;
+                    debugLog('✓ TX sent: ' + txHash);
+                    
+                    status.textContent = '⏳ Waiting for confirmation...';
+                    await tx.wait();
+                }
                 
-                const tx = await contract.postIntent(
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS,
-                    ETH_CHAIN_ID,
-                    minOut,
-                    { value: amountWei }
-                );
-                
-                status.textContent = '✅ Intent posted! TX: ' + tx.hash.substring(0, 20) + '...';
-                
-                const receipt = await tx.wait();
+                status.textContent = '✅ Intent posted! TX: ' + txHash.substring(0, 20) + '...';
                 status.textContent = '🤖 Agents calculating competitive bids...';
                 
                 // Show simulated agent bids
                 const prices = await fetchLivePrices();
-                showAgentBids(parseFloat(amount), prices, tx.hash);
+                showAgentBids(parseFloat(amount), prices, txHash);
                 
                 btn.innerHTML = '✅ Intent Posted!';
                 setTimeout(() => {
@@ -726,6 +768,7 @@
                 
             } catch (error) {
                 console.error('Transaction error:', error);
+                debugLog('❌ Transaction failed: ' + error.message, true);
                 status.className = 'status active error';
                 status.textContent = '❌ Transaction failed: ' + (error.message || 'Unknown error');
                 btn.innerHTML = '🚀 Post Intent to Smart Contract';
