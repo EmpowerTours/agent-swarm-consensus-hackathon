@@ -1,0 +1,38 @@
+{
+  "conservative": {
+    "name": "Conservative Agent",
+    "alias": "The Value Optimizer",
+    "strategy": "CHEAP",
+    "traits": ["low-fee", "reliable", "patient"],
+    "config": {
+      "feePercent": 0.24,
+      "executionTime": 180,
+      "riskTolerance": 0.2
+    },
+    "description": "Focuses on delivering maximum output by minimizing fees. Best for users who prioritize value over speed."
+  },
+  "contrarian": {
+    "name": "Contrarian Agent",
+    "alias": "The Balanced Executor",
+    "strategy": "SPEEDY",
+    "traits": ["balanced", "analytical", "adaptive"],
+    "config": {
+      "feePercent": 0.36,
+      "executionTime": 60,
+      "riskTolerance": 0.6
+    },
+    "description": "Balances speed and value. Charges moderate fees but delivers faster execution for power traders."
+  },
+  "whale": {
+    "name": "Whale Agent",
+    "alias": "The Speed Demon",
+    "strategy": "SPEEDY",
+    "traits": ["fast", "aggressive", "premium"],
+    "config": {
+      "feePercent": 0.36,
+      "executionTime": 60,
+      "riskTolerance": 0.9
+    },
+    "description": "Premium fast execution for whales who need instant liquidity and competitive pricing."
+  }
+}

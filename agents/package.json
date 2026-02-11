@@ -1,0 +1,16 @@
+{
+  "name": "agent-swarm-intent-auction",
+  "version": "1.0.0",
+  "description": "AI agents competing for best cross-chain swap execution - EasyA Consensus Hackathon 2026",
+  "main": "run-live-auction.js",
+  "scripts": {
+    "demo": "node run-live-auction.js"
+  },
+  "keywords": ["defi", "intent", "auction", "monad", "layerzero", "hackathon"],
+  "author": "EmpowerTours",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "axios": "^1.6.0"
+  }
+}
