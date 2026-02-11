@@ -831,14 +831,29 @@
                 
             } catch (error) {
                 console.error('Transaction error:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    code: error.code,
+                    data: error.data,
+                    reason: error.reason
+                });
+                
                 debugLog('❌ Transaction failed: ' + error.message, true);
+                if (error.reason) debugLog('Reason: ' + error.reason, true);
+                
                 status.className = 'status active error';
                 
                 let errorMsg = error.message || 'Unknown error';
-                if (error.code === 4001 || errorMsg.includes('User denied')) {
+                
+                // Better error messages
+                if (error.code === 4001 || errorMsg.includes('User denied') || errorMsg.includes('rejected')) {
                     errorMsg = 'Transaction rejected by user';
-                } else if (errorMsg.includes('insufficient funds')) {
-                    errorMsg = 'Insufficient MON balance';
+                } else if (errorMsg.includes('insufficient funds') || error.code === 'INSUFFICIENT_FUNDS') {
+                    errorMsg = 'Insufficient MON balance (need MON for transaction + gas)';
+                } else if (errorMsg.includes('gas')) {
+                    errorMsg = 'Gas estimation failed - check your MON balance';
+                } else if (error.reason) {
+                    errorMsg = error.reason;
                 }
                 
                 status.textContent = '❌ ' + errorMsg;
