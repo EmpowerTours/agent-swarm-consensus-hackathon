@@ -547,9 +547,14 @@
         }
         
         async function connectWallet() {
+            // Wait a bit for ethers to load if page just loaded
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             // Debug: Check what wallet providers are available
             debugLog('=== WALLET CONNECTION START ===');
-            debugLog('ethers library loaded: ' + (typeof ethers !== 'undefined'));
+            
+            const ethersLoaded = typeof ethers !== 'undefined' && ethers.providers;
+            debugLog('ethers library loaded: ' + ethersLoaded);
             debugLog('window.ethereum exists: ' + !!window.ethereum);
             
             if (!window.ethereum) {
@@ -578,13 +583,13 @@
                 // Step 2: Try to create provider (mobile fallback if it fails)
                 debugLog('Step 2: Creating ethers provider...');
                 try {
-                    if (typeof ethers === 'undefined') {
-                        throw new Error('ethers.js not loaded');
+                    if (typeof ethers === 'undefined' || !ethers.providers) {
+                        throw new Error('ethers.js not available - check CDN');
                     }
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     signer = provider.getSigner();
                     contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                    debugLog('✓ Ethers.js mode enabled');
+                    debugLog('✓ Ethers.js provider created successfully');
                     useMobileMode = false;
                 } catch (providerError) {
                     debugLog('⚠ Ethers.js failed, using mobile mode: ' + providerError.message);
