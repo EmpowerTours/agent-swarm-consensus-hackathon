@@ -33,3 +33,8 @@ npm-debug.log*
 # Temporary files
 *.tmp
 temp/
+
+# Agent backend
+agents/backend/node_modules/
+agents/backend/.env
+agents/backend/package-lock.json

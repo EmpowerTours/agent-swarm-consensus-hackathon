@@ -1,0 +1,16 @@
+{
+  "name": "intent-auction-agents",
+  "version": "1.0.0",
+  "description": "Real AI agents for intent auction",
+  "main": "agent-runner.js",
+  "scripts": {
+    "start": "node agent-runner.js",
+    "conservative": "node agents/conservative.js",
+    "contrarian": "node agents/contrarian.js",
+    "whale": "node agents/whale.js"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2",
+    "dotenv": "^16.0.3"
+  }
+}
