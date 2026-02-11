@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ethers.js Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+    <h1>Ethers.js Loading Test</h1>
+    <div id="result"></div>
+    
+    <script>
+        const result = document.getElementById('result');
+        
+        setTimeout(() => {
+            if (typeof ethers !== 'undefined') {
+                result.innerHTML = '<p style="color: green;">✅ SUCCESS: ethers.js loaded!</p>';
+                result.innerHTML += '<p>Version: ' + ethers.version + '</p>';
+                result.innerHTML += '<p>Has providers: ' + (!!ethers.providers) + '</p>';
+            } else {
+                result.innerHTML = '<p style="color: red;">❌ FAILED: ethers.js not loaded</p>';
+                result.innerHTML += '<p>Check browser console for errors</p>';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
