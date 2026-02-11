@@ -519,6 +519,39 @@
         let provider, signer, contract;
         let connectedAccount = null;
         let useMobileMode = false; // Fallback for when ethers.js fails
+        let ethersReady = false;
+        
+        // Wait for ethers.js to load
+        function waitForEthers() {
+            return new Promise((resolve) => {
+                if (typeof ethers !== 'undefined' && ethers.providers) {
+                    ethersReady = true;
+                    console.log('✅ Ethers.js ready:', ethers.version);
+                    resolve(true);
+                } else {
+                    // Check every 50ms for up to 3 seconds
+                    let attempts = 0;
+                    const interval = setInterval(() => {
+                        attempts++;
+                        if (typeof ethers !== 'undefined' && ethers.providers) {
+                            clearInterval(interval);
+                            ethersReady = true;
+                            console.log('✅ Ethers.js loaded after', attempts * 50, 'ms');
+                            resolve(true);
+                        } else if (attempts > 60) { // 3 seconds
+                            clearInterval(interval);
+                            console.error('❌ Ethers.js failed to load after 3 seconds');
+                            resolve(false);
+                        }
+                    }, 50);
+                }
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await waitForEthers();
+        });
         
         // Debug logger for mobile
         function debugLog(message, isError = false) {
@@ -532,8 +565,11 @@
         }
         
         async function connectWallet() {
-            // Wait a bit for ethers to load if page just loaded
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Ensure ethers is loaded
+            if (!ethersReady) {
+                debugLog('Waiting for ethers.js to load...');
+                await waitForEthers();
+            }
             
             // Debug: Check what wallet providers are available
             debugLog('=== WALLET CONNECTION START ===');
