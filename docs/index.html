@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Swarm - Live Demo</title>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" type="application/javascript"></script>
+    <script>
+        // Ensure ethers loads before continuing
+        window.addEventListener('load', function() {
+            if (typeof ethers === 'undefined') {
+                console.error('Ethers.js failed to load from CDN');
+            } else {
+                console.log('Ethers.js loaded successfully:', ethers.version);
+            }
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -588,7 +598,8 @@
                 
                 const networkBadge = document.getElementById('networkBadge');
                 
-                if (currentChainId === MONAD_CHAIN_ID) {
+                // Case-insensitive comparison (0x279F vs 0x279f)
+                if (currentChainId.toLowerCase() === MONAD_CHAIN_ID.toLowerCase()) {
                     networkBadge.textContent = 'Monad Testnet';
                     networkBadge.classList.remove('wrong');
                     document.getElementById('startBtn').disabled = false;
@@ -597,7 +608,7 @@
                 } else {
                     networkBadge.textContent = 'Wrong Network';
                     networkBadge.classList.add('wrong');
-                    debugLog('⚠ Wrong network, attempting to switch...');
+                    debugLog('⚠ Wrong network (got ' + currentChainId + ', expected ' + MONAD_CHAIN_ID + ')');
                     await switchToMonad();
                 }
                 
