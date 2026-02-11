@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Detection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Wallet Detection Test</h1>
+    <p>This page will help diagnose which Web3 wallet you have installed.</p>
+    
+    <button onclick="checkWallet()">Check Wallet</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        function checkWallet() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Results:</h2>';
+            
+            // Check if window.ethereum exists
+            if (typeof window.ethereum === 'undefined') {
+                results.innerHTML += '<div class="info error"><strong>❌ No Web3 Wallet Detected</strong><p>window.ethereum is undefined</p><p>Please install: Rainbow, MetaMask, Coinbase Wallet, or another Web3 browser extension.</p></div>';
+                return;
+            }
+            
+            results.innerHTML += '<div class="info success"><strong>✅ window.ethereum detected!</strong></div>';
+            
+            // Check specific wallets
+            const wallets = [];
+            if (window.ethereum.isMetaMask) wallets.push('MetaMask');
+            if (window.ethereum.isRainbow) wallets.push('Rainbow');
+            if (window.ethereum.isCoinbaseWallet) wallets.push('Coinbase Wallet');
+            if (window.ethereum.isBraveWallet) wallets.push('Brave Wallet');
+            if (window.ethereum.isTrust) wallets.push('Trust Wallet');
+            
+            if (wallets.length > 0) {
+                results.innerHTML += `<div class="info"><strong>Detected Wallets:</strong><ul>${wallets.map(w => '<li>' + w + '</li>').join('')}</ul></div>`;
+            } else {
+                results.innerHTML += '<div class="info"><strong>Unknown Wallet</strong><p>A Web3 provider is detected, but we can\'t identify which wallet it is.</p></div>';
+            }
+            
+            // Show all properties
+            const props = Object.keys(window.ethereum).filter(k => k.startsWith('is'));
+            if (props.length > 0) {
+                results.innerHTML += `<div class="info"><strong>All wallet flags:</strong><ul>${props.map(p => '<li>' + p + ': ' + window.ethereum[p] + '</li>').join('')}</ul></div>`;
+            }
+            
+            // Try to connect
+            results.innerHTML += '<button onclick="tryConnect()" style="margin-top: 10px;">Try Connecting</button>';
+        }
+        
+        async function tryConnect() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                alert('✅ Connected!\nAddress: ' + accounts[0]);
+            } catch (error) {
+                alert('❌ Connection failed:\n' + error.message);
+            }
+        }
+        
+        // Auto-check on load
+        window.onload = function() {
+            setTimeout(checkWallet, 500);
+        };
+    </script>
+</body>
+</html>
