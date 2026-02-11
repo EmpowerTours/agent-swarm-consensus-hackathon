@@ -683,6 +683,11 @@
                 return;
             }
             
+            if (useMobileMode) {
+                alert('⚠️ Mobile browser detected!\n\nFor full functionality, please use:\n• Desktop browser with Rainbow/MetaMask extension\n• Or WalletConnect (coming soon)\n\nMobile in-app browsers have limited Web3 support.');
+                return;
+            }
+            
             const btn = document.getElementById('startBtn');
             const status = document.getElementById('status');
             const agentsGrid = document.getElementById('agentsGrid');
@@ -694,64 +699,29 @@
             
             try {
                 const amount = document.getElementById('amountInput').value;
-                let txHash;
+                const amountWei = ethers.utils.parseEther(amount);
                 
-                if (useMobileMode) {
-                    debugLog('📱 Using mobile mode (raw transactions)');
-                    
-                    // Convert amount to wei manually (amount * 10^18)
-                    const amountWei = '0x' + (BigInt(Math.floor(parseFloat(amount) * 1e18))).toString(16);
-                    
-                    // Encode function call manually
-                    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-                    const ETH_CHAIN_ID_HEX = '0x0000000000000000000000000000000000000000000000000000000000000001';
-                    const MIN_OUT = '0x0000000000000000000000000000000000000000000000000000000000000000';
-                    
-                    // Function signature: postIntent(address,address,uint32,uint256)
-                    const functionSig = '0x8a4f1be3'; // First 4 bytes of keccak256("postIntent(address,address,uint32,uint256)")
-                    
-                    const data = functionSig +
-                        ZERO_ADDRESS.substring(2).padStart(64, '0') +
-                        ZERO_ADDRESS.substring(2).padStart(64, '0') +
-                        '0000000000000000000000000000000000000000000000000000000000000001' +
-                        MIN_OUT.substring(2).padStart(64, '0');
-                    
-                    debugLog('Sending raw transaction...');
-                    txHash = await window.ethereum.request({
-                        method: 'eth_sendTransaction',
-                        params: [{
-                            from: connectedAccount,
-                            to: CONTRACT_ADDRESS,
-                            value: amountWei,
-                            data: data
-                        }]
-                    });
-                    
-                    debugLog('✓ TX sent: ' + txHash);
-                    
-                } else {
-                    debugLog('💻 Using ethers.js mode');
-                    const amountWei = ethers.utils.parseEther(amount);
-                    
-                    // Post intent to smart contract
-                    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-                    const ETH_CHAIN_ID = 1;
-                    const minOut = ethers.utils.parseEther('0'); // No minimum for demo
-                    
-                    const tx = await contract.postIntent(
-                        ZERO_ADDRESS,
-                        ZERO_ADDRESS,
-                        ETH_CHAIN_ID,
-                        minOut,
-                        { value: amountWei }
-                    );
-                    
-                    txHash = tx.hash;
-                    debugLog('✓ TX sent: ' + txHash);
-                    
-                    status.textContent = '⏳ Waiting for confirmation...';
-                    await tx.wait();
-                }
+                debugLog('💻 Sending transaction via ethers.js');
+                
+                // Post intent to smart contract
+                const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+                const ETH_CHAIN_ID = 1;
+                const minOut = ethers.utils.parseEther('0'); // No minimum for demo
+                
+                const tx = await contract.postIntent(
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    ETH_CHAIN_ID,
+                    minOut,
+                    { value: amountWei }
+                );
+                
+                const txHash = tx.hash;
+                debugLog('✓ TX Hash: ' + txHash);
+                
+                status.textContent = '⏳ Waiting for confirmation...';
+                await tx.wait();
+                debugLog('✓ Transaction confirmed');
                 
                 status.textContent = '✅ Intent posted! TX: ' + txHash.substring(0, 20) + '...';
                 status.textContent = '🤖 Agents calculating competitive bids...';
@@ -770,7 +740,15 @@
                 console.error('Transaction error:', error);
                 debugLog('❌ Transaction failed: ' + error.message, true);
                 status.className = 'status active error';
-                status.textContent = '❌ Transaction failed: ' + (error.message || 'Unknown error');
+                
+                let errorMsg = error.message || 'Unknown error';
+                if (error.code === 4001 || errorMsg.includes('User denied')) {
+                    errorMsg = 'Transaction rejected by user';
+                } else if (errorMsg.includes('insufficient funds')) {
+                    errorMsg = 'Insufficient MON balance';
+                }
+                
+                status.textContent = '❌ ' + errorMsg;
                 btn.innerHTML = '🚀 Post Intent to Smart Contract';
                 btn.disabled = false;
             }
