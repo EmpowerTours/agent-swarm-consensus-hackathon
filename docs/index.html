@@ -516,6 +516,8 @@
         
         async function connectWallet() {
             // Debug: Check what wallet providers are available
+            console.log('=== WALLET CONNECTION DEBUG ===');
+            console.log('window.ethereum exists:', !!window.ethereum);
             console.log('window.ethereum:', window.ethereum);
             console.log('isMetaMask:', window.ethereum?.isMetaMask);
             console.log('isRainbow:', window.ethereum?.isRainbow);
@@ -527,24 +529,50 @@
             }
             
             try {
-                console.log('Requesting accounts...');
+                // Step 1: Request accounts
+                console.log('Step 1: Requesting accounts...');
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                console.log('Accounts received:', accounts);
+                console.log('✓ Accounts received:', accounts);
                 
                 if (!accounts || accounts.length === 0) {
-                    throw new Error('No accounts returned. Is Rainbow unlocked?');
+                    throw new Error('No accounts returned. Is your wallet unlocked?');
                 }
                 
                 connectedAccount = accounts[0];
-                console.log('Connected account:', connectedAccount);
+                console.log('✓ Connected account:', connectedAccount);
                 
-                provider = new ethers.providers.Web3Provider(window.ethereum);
+                // Step 2: Create provider (this can fail on mobile)
+                console.log('Step 2: Creating ethers provider...');
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    console.log('✓ Provider created:', provider);
+                } catch (providerError) {
+                    console.error('Provider creation failed:', providerError);
+                    throw new Error('Failed to create Web3 provider. Try desktop browser.');
+                }
+                
+                // Step 3: Get signer
+                console.log('Step 3: Getting signer...');
                 signer = provider.getSigner();
-                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                console.log('✓ Signer obtained');
                 
-                // Check network
-                const network = await provider.getNetwork();
-                console.log('Current network:', network);
+                // Step 4: Create contract
+                console.log('Step 4: Creating contract instance...');
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                console.log('✓ Contract created:', CONTRACT_ADDRESS);
+                
+                // Step 5: Check network (might fail on mobile)
+                console.log('Step 5: Checking network...');
+                let network;
+                try {
+                    network = await provider.getNetwork();
+                    console.log('✓ Current network:', network);
+                } catch (networkError) {
+                    console.warn('Network check failed (non-critical):', networkError);
+                    // Continue anyway - we'll try to switch/add network
+                    network = { chainId: 0 };
+                }
+                
                 const networkBadge = document.getElementById('networkBadge');
                 
                 if (network.chainId === 10143) {
