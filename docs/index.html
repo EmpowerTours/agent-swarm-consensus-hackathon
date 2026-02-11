@@ -4,24 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Swarm - Live Demo</title>
-    <!-- Try multiple CDN sources for ethers.js -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" 
-            onerror="console.error('Primary CDN failed, trying backup...'); 
-                     var script = document.createElement('script'); 
-                     script.src='https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js'; 
-                     document.head.appendChild(script);">
-    </script>
-    <script>
-        // Ensure ethers loads before continuing
-        window.addEventListener('load', function() {
-            if (typeof ethers === 'undefined') {
-                console.error('⚠️ Ethers.js failed to load from all CDNs');
-                console.log('Mobile mode will be used (limited functionality)');
-            } else {
-                console.log('✅ Ethers.js loaded successfully:', ethers.version);
-            }
-        });
-    </script>
+    
+    <!-- Load ethers.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
     <style>
         * {
             margin: 0;
