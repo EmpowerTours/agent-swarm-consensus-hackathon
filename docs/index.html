@@ -515,8 +515,14 @@
         let connectedAccount = null;
         
         async function connectWallet() {
+            // Debug: Check what wallet providers are available
+            console.log('window.ethereum:', window.ethereum);
+            console.log('isMetaMask:', window.ethereum?.isMetaMask);
+            console.log('isRainbow:', window.ethereum?.isRainbow);
+            console.log('isCoinbaseWallet:', window.ethereum?.isCoinbaseWallet);
+            
             if (!window.ethereum) {
-                alert('Please install MetaMask!');
+                alert('Please install a Web3 wallet (MetaMask, Rainbow, Coinbase Wallet, etc.)');
                 return;
             }
             
@@ -543,9 +549,15 @@
                     await switchToMonad();
                 }
                 
+                // Detect wallet type
+                let walletName = 'Wallet';
+                if (window.ethereum.isMetaMask) walletName = 'MetaMask';
+                else if (window.ethereum.isRainbow) walletName = 'Rainbow';
+                else if (window.ethereum.isCoinbaseWallet) walletName = 'Coinbase';
+                
                 document.getElementById('walletAddress').textContent = 
                     connectedAccount.substring(0, 6) + '...' + connectedAccount.substring(38);
-                document.getElementById('connectBtn').textContent = 'Connected';
+                document.getElementById('connectBtn').textContent = `Connected (${walletName})`;
                 
                 // Fetch prices
                 fetchLivePrices();
