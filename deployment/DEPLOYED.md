@@ -9,8 +9,8 @@
 **Verified:** ✅ Yes
 
 ### Explorer Links
-- Contract: https://testnet.monadscan.xyz/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
-- Deployer: https://testnet.monadscan.xyz/address/0xE14FF3994fad08F0Aad63b04d2937D20aE2C8228
+- Contract: https://testnet.monadscan.com/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
+- Deployer: https://testnet.monadscan.com/address/0xE14FF3994fad08F0Aad63b04d2937D20aE2C8228
 
 ### Example Transactions
 - Intent Posted: `0xf2e4a96a0baa87844fbdbfca51b29f3911bc274fa5c8dcf110fe1cc362ec1535`
@@ -18,4 +18,4 @@
 ## Network Details
 - RPC: https://testnet-rpc.monad.xyz
 - Chain ID: 10143
-- Block Explorer: https://testnet.monadscan.xyz
+- Block Explorer: https://testnet.monadscan.com

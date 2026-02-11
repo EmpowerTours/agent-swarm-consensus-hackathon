@@ -176,7 +176,7 @@ async function main() {
   
   console.log('✅ Demo complete! Transactions recorded on Monad testnet');
   console.log(`   Intent TX: ${receipt.hash}`);
-  console.log(`   Contract: https://testnet.monadscan.xyz/address/${CONTRACT_ADDRESS}\n`);
+  console.log(`   Contract: https://testnet.monadscan.com/address/${CONTRACT_ADDRESS}\n`);
 }
 
 main().catch(error => {

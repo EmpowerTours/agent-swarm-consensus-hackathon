@@ -440,7 +440,7 @@
             winnerSection.classList.add('active');
             document.getElementById('winnerName').textContent = 'Conservative Agent';
             document.getElementById('savingsAmount').textContent = '$0.03';
-            document.getElementById('txLink').href = 'https://testnet.monadscan.xyz/address/0xa3D01411b8331fCcD0Da3011575082361fb97839';
+            document.getElementById('txLink').href = 'https://testnet.monadscan.com/address/0xa3D01411b8331fCcD0Da3011575082361fb97839';
             
             status.textContent = '🎉 Auction complete! Transaction confirmed on Monad.';
             
@@ -455,9 +455,10 @@
             card.className = 'agent-card';
             card.setAttribute('data-agent', key);
             
-            const inputValue = 5; // $5
+            const randomVariance = (Math.random() - 0.5) * 0.02; // +/- 1% variance
+        const inputValue = 5; // $5
             const fee = inputValue * (agent.feePercent / 100);
-            const outputValue = inputValue - fee;
+            const outputValue = (inputValue - fee) * (1 + randomVariance);
             
             card.innerHTML = `
                 <span class="badge">${agent.strategy}</span>

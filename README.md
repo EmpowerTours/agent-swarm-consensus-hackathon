@@ -72,7 +72,7 @@ All agents use **real-time CoinGecko prices** and calculate optimal routing.
 
 **Deployed on Monad Testnet:**
 - Address: `0xa3D01411b8331fCcD0Da3011575082361fb97839`
-- Explorer: https://testnet.monadscan.xyz/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
+- Explorer: https://testnet.monadscan.com/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
 - Verified: ✅
 
 ### Key Functions
@@ -164,7 +164,7 @@ Whale:        $4.98 USDC (0.36% fee, 60s)
 
 **Winner:** Conservative Agent  
 **User Saves:** $0.03 vs 0.5% traditional DEX fee  
-**Transaction:** https://testnet.monadscan.xyz/tx/0xf2e4a96a...
+**Transaction:** https://testnet.monadscan.com/tx/0xf2e4a96a...
 
 ---
 
