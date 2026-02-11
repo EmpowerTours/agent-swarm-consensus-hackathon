@@ -527,8 +527,16 @@
             }
             
             try {
+                console.log('Requesting accounts...');
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                console.log('Accounts received:', accounts);
+                
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts returned. Is Rainbow unlocked?');
+                }
+                
                 connectedAccount = accounts[0];
+                console.log('Connected account:', connectedAccount);
                 
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 signer = provider.getSigner();
@@ -536,6 +544,7 @@
                 
                 // Check network
                 const network = await provider.getNetwork();
+                console.log('Current network:', network);
                 const networkBadge = document.getElementById('networkBadge');
                 
                 if (network.chainId === 10143) {
@@ -564,7 +573,18 @@
                 
             } catch (error) {
                 console.error('Error connecting:', error);
-                alert('Failed to connect wallet');
+                
+                // Show specific error message
+                let errorMsg = 'Failed to connect wallet';
+                if (error.code === 4001) {
+                    errorMsg = 'Connection rejected. Please approve the connection in Rainbow.';
+                } else if (error.code === -32002) {
+                    errorMsg = 'Connection request pending. Please check Rainbow for pending approval.';
+                } else if (error.message) {
+                    errorMsg = 'Error: ' + error.message;
+                }
+                
+                alert(errorMsg + '\n\nCheck browser console (F12) for details.');
             }
         }
         
