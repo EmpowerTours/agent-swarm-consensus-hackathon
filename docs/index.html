@@ -507,7 +507,12 @@
         
         const CONTRACT_ABI = [
             'function postIntent(address tokenIn, address tokenOut, uint32 destChain, uint256 minOut) external payable returns (uint256)',
-            'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn)'
+            'function submitBid(uint256 intentId, uint256 promisedOut, uint256 fee) external payable',
+            'function executeIntent(uint256 intentId, uint256 bidIndex) external',
+            'function bids(uint256 intentId, uint256 index) external view returns (address agent, uint256 promisedOut, uint256 fee, uint256 timestamp)',
+            'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn)',
+            'event BidSubmitted(uint256 indexed intentId, address indexed agent, uint256 promisedOut, uint256 fee)',
+            'event IntentExecuted(uint256 indexed intentId, address indexed winner, uint256 payout)'
         ];
         
         const AGENTS = {
@@ -813,15 +818,22 @@
                 debugLog('✓ TX Hash: ' + txHash);
                 
                 status.textContent = '⏳ Waiting for confirmation...';
-                await tx.wait();
-                debugLog('✓ Transaction confirmed');
+                const receipt = await tx.wait();
+                debugLog('✓ Transaction confirmed in block ' + receipt.blockNumber);
+                
+                // Extract intent ID from logs
+                const intentId = receipt.events?.find(e => e.event === 'IntentPosted')?.args?.intentId;
+                
+                if (!intentId) {
+                    throw new Error('Could not extract intent ID from transaction');
+                }
+                
+                debugLog('✓ Intent ID: ' + intentId.toString());
                 
                 status.textContent = '✅ Intent posted! TX: ' + txHash.substring(0, 20) + '...';
-                status.textContent = '🤖 Agents calculating competitive bids...';
                 
-                // Show simulated agent bids
-                const prices = await fetchLivePrices();
-                showAgentBids(parseFloat(amount), prices, txHash);
+                // Wait for real agent bids
+                await waitForAgentBids(intentId, parseFloat(amount), txHash);
                 
                 btn.innerHTML = '✅ Intent Posted!';
                 setTimeout(() => {
@@ -862,6 +874,175 @@
             }
         }
         
+        // Wait for real agent bids from blockchain
+        async function waitForAgentBids(intentId, amount, txHash) {
+            const status = document.getElementById('status');
+            const agentsGrid = document.getElementById('agentsGrid');
+            agentsGrid.innerHTML = '';
+            
+            status.textContent = '🤖 Waiting for agents to submit bids...';
+            debugLog('👀 Listening for BidSubmitted events for intent ' + intentId);
+            
+            const receivedBids = [];
+            const agentNames = {
+                '0x5Df74Df4D84687DB6a80cFb6F46EfffD7D8417DA': { name: 'Conservative Agent', strategy: 'CHEAP' },
+                '0xFFD07B67a613c374551b4383a76b9E99A0eFAB00': { name: 'Contrarian Agent', strategy: 'SPEEDY' },
+                '0x3eCC0BcA71C8cFd10e26A05CaEa83cFe97f9c41A': { name: 'Whale Agent', strategy: 'SPEEDY' }
+            };
+            
+            // Listen for bid events
+            const bidFilter = contract.filters.BidSubmitted(intentId);
+            
+            return new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    debugLog('⚠ Timeout waiting for bids (30s)');
+                    if (receivedBids.length === 0) {
+                        status.textContent = '⚠ No agents submitted bids yet. They may need more time or MON balance.';
+                    } else {
+                        showWinner(receivedBids, intentId, txHash);
+                    }
+                    resolve();
+                }, 30000); // 30 second timeout
+                
+                contract.on(bidFilter, async (intentIdEvent, agent, promisedOut, fee, event) => {
+                    const agentInfo = agentNames[agent] || { name: 'Unknown Agent', strategy: 'UNKNOWN' };
+                    
+                    debugLog(`📥 Bid received from ${agentInfo.name}`);
+                    debugLog(`  Output: ${ethers.utils.formatEther(promisedOut)} USDC`);
+                    
+                    const bidData = {
+                        agent: agent,
+                        name: agentInfo.name,
+                        strategy: agentInfo.strategy,
+                        promisedOut: parseFloat(ethers.utils.formatEther(promisedOut)),
+                        fee: parseFloat(ethers.utils.formatEther(fee)),
+                        txHash: event.transactionHash
+                    };
+                    
+                    receivedBids.push(bidData);
+                    
+                    // Display bid card
+                    const card = createRealBidCard(bidData, receivedBids.length - 1);
+                    agentsGrid.appendChild(card);
+                    setTimeout(() => card.classList.add('active'), 100);
+                    
+                    status.textContent = `🤖 Received ${receivedBids.length}/3 bids...`;
+                    
+                    // If we got all 3 bids, show winner
+                    if (receivedBids.length === 3) {
+                        clearTimeout(timeout);
+                        contract.removeAllListeners(bidFilter);
+                        
+                        await sleep(2000);
+                        showWinner(receivedBids, intentId, txHash);
+                        resolve();
+                    }
+                });
+            });
+        }
+        
+        function showWinner(bids, intentId, txHash) {
+            const status = document.getElementById('status');
+            
+            if (bids.length === 0) {
+                return;
+            }
+            
+            // Find highest output
+            const winner = bids.reduce((best, current, index) => {
+                if (current.promisedOut > best.bid.promisedOut) {
+                    return { bid: current, index };
+                }
+                return best;
+            }, { bid: bids[0], index: 0 });
+            
+            debugLog(`🏆 Winner: ${winner.bid.name} (output: ${winner.bid.promisedOut.toFixed(4)} USDC)`);
+            
+            // Highlight winner
+            const cards = document.querySelectorAll('.agent-card');
+            if (cards[winner.index]) {
+                cards[winner.index].classList.add('winner');
+                cards[winner.index].querySelector('.badge').textContent = '🏆 WINNER';
+            }
+            
+            // Show winner section
+            const winnerSection = document.getElementById('winnerSection');
+            document.getElementById('winnerName').textContent = winner.bid.name;
+            
+            const inputValue = parseFloat(document.getElementById('amountInput').value) * 5; // MON = $5
+            const savings = (inputValue * 0.005) - winner.bid.fee; // vs 0.5% DEX fee
+            document.getElementById('savingsAmount').textContent = `$${savings.toFixed(4)}`;
+            
+            const txLink = document.getElementById('txLink');
+            txLink.href = `https://testnet.monadscan.com/tx/${txHash}`;
+            
+            winnerSection.style.display = 'block';
+            winnerSection.classList.add('active');
+            
+            // Add execute button
+            const executeBtn = document.createElement('button');
+            executeBtn.className = 'start-btn';
+            executeBtn.textContent = '✅ Execute Intent with Winner';
+            executeBtn.style.marginTop = '20px';
+            executeBtn.onclick = () => executeIntent(intentId, winner.index);
+            winnerSection.appendChild(executeBtn);
+            
+            status.textContent = '✅ Auction complete! Select winner to execute.';
+        }
+        
+        async function executeIntent(intentId, bidIndex) {
+            const status = document.getElementById('status');
+            
+            try {
+                status.textContent = '⏳ Executing intent...';
+                debugLog(`🔄 Executing intent ${intentId} with bid ${bidIndex}`);
+                
+                const tx = await contract.executeIntent(intentId, bidIndex);
+                debugLog('✓ Execution TX: ' + tx.hash);
+                
+                status.textContent = '⏳ Waiting for confirmation...';
+                await tx.wait();
+                
+                status.textContent = '✅ Intent executed successfully!';
+                debugLog('✅ Intent executed! Winner paid out.');
+                
+            } catch (error) {
+                console.error('Execute error:', error);
+                status.textContent = '❌ Execution failed: ' + (error.reason || error.message);
+                debugLog('❌ Execution failed: ' + error.message, true);
+            }
+        }
+        
+        function createRealBidCard(bid, index) {
+            const card = document.createElement('div');
+            card.className = 'agent-card';
+            card.setAttribute('data-agent', `agent-${index}`);
+            
+            card.innerHTML = `
+                <div class="agent-header">
+                    <div class="agent-name">${bid.name}</div>
+                    <div class="badge">${bid.strategy}</div>
+                </div>
+                <div class="agent-stats">
+                    <div class="stat">
+                        <div class="stat-label">Output</div>
+                        <div class="stat-value">${bid.promisedOut.toFixed(4)} USDC</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Fee</div>
+                        <div class="stat-value">$${bid.fee.toFixed(4)}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">TX</div>
+                        <div class="stat-value"><a href="https://testnet.monadscan.com/tx/${bid.txHash}" target="_blank" style="color: inherit; font-size: 0.8em;">${bid.txHash.substring(0, 10)}...</a></div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // OLD FUNCTION - Keep for fallback/testing
         async function showAgentBids(amount, prices, txHash) {
             const agentsGrid = document.getElementById('agentsGrid');
             agentsGrid.innerHTML = '';
