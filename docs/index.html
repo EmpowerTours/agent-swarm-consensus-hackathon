@@ -632,27 +632,76 @@
         }
         
         async function switchToMonad() {
+            debugLog('Attempting to add/switch to Monad Testnet...');
+            
             try {
+                // First try to switch
+                debugLog('Trying wallet_switchEthereumChain...');
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: MONAD_CHAIN_ID }],
                 });
+                debugLog('✓ Switched to Monad Testnet');
+                
+                // Update UI
+                const networkBadge = document.getElementById('networkBadge');
+                networkBadge.textContent = 'Monad Testnet';
+                networkBadge.classList.remove('wrong');
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('setupInfo').style.display = 'none';
+                
             } catch (switchError) {
-                if (switchError.code === 4902) {
+                debugLog('Switch failed: ' + switchError.message);
+                
+                // Error code 4902 means network not added yet
+                if (switchError.code === 4902 || switchError.message.includes('Unrecognized chain')) {
+                    debugLog('Network not found, attempting to add...');
+                    
                     try {
                         await window.ethereum.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
                                 chainId: MONAD_CHAIN_ID,
                                 chainName: 'Monad Testnet',
-                                nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+                                nativeCurrency: { 
+                                    name: 'Monad', 
+                                    symbol: 'MON', 
+                                    decimals: 18 
+                                },
                                 rpcUrls: ['https://testnet-rpc.monad.xyz'],
                                 blockExplorerUrls: ['https://testnet.monadscan.com']
                             }],
                         });
+                        
+                        debugLog('✓ Monad Testnet added successfully!');
+                        
+                        // Update UI
+                        const networkBadge = document.getElementById('networkBadge');
+                        networkBadge.textContent = 'Monad Testnet';
+                        networkBadge.classList.remove('wrong');
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('setupInfo').style.display = 'none';
+                        
                     } catch (addError) {
-                        console.error('Error adding network:', addError);
+                        debugLog('❌ Failed to add network: ' + addError.message, true);
+                        
+                        if (addError.code === 4001) {
+                            alert('❌ Network addition rejected\n\nYou need to approve adding Monad Testnet in your wallet.');
+                        } else {
+                            alert('❌ Failed to add Monad Testnet\n\n' + addError.message + '\n\nPlease add it manually:\n\n' +
+                                  'Network: Monad Testnet\n' +
+                                  'RPC: https://testnet-rpc.monad.xyz\n' +
+                                  'Chain ID: 10143\n' +
+                                  'Symbol: MON\n' +
+                                  'Explorer: https://testnet.monadscan.com');
+                        }
                     }
+                } else if (switchError.code === 4001) {
+                    debugLog('⚠ User rejected network switch');
+                    alert('❌ Network switch rejected\n\nPlease approve switching to Monad Testnet in your wallet.');
+                } else {
+                    debugLog('❌ Unknown error: ' + switchError.message, true);
+                    throw switchError;
                 }
             }
         }
