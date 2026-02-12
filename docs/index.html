@@ -831,10 +831,10 @@
                 
                 // Explicitly set gas to avoid estimation failure (Rainbow/Monad RPC issue)
                 const gasLimit = 150000; // More than enough for postIntent
-                const gasPrice = await provider.getGasPrice().catch(() => ethers.utils.parseUnits('100', 'gwei'));
+                const gasPrice = ethers.utils.parseUnits('100', 'gwei'); // Hardcode for Rainbow compatibility
                 
                 debugLog('Gas limit: ' + gasLimit);
-                debugLog('Gas price: ' + ethers.utils.formatUnits(gasPrice, 'gwei') + ' gwei');
+                debugLog('Gas price: 100 gwei (hardcoded)');
                 
                 const tx = await contract.postIntent(
                     ZERO_ADDRESS,

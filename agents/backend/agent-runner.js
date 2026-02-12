@@ -3,7 +3,7 @@ require('dotenv').config();
 
 // Contract details
 const CONTRACT_ADDRESS = '0xa3D01411b8331fCcD0Da3011575082361fb97839';
-const MONAD_RPC = process.env.MONAD_RPC_URL || 'wss://testnet-rpc.monad.xyz'; // WebSocket for real-time events!
+const MONAD_RPC = 'wss://testnet-rpc.monad.xyz'; // Force WebSocket!
 
 const CONTRACT_ABI = [
     'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn, uint32 destChain)',
