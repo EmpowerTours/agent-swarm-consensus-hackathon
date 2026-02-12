@@ -830,7 +830,7 @@
                 debugLog('Calling contract.postIntent()...');
                 
                 // Explicitly set gas to avoid estimation failure (Rainbow/Monad RPC issue)
-                const gasLimit = 150000; // More than enough for postIntent
+                const gasLimit = 300000; // Increased gas limit for Monad
                 const gasPrice = ethers.utils.parseUnits('100', 'gwei'); // Hardcode for Rainbow compatibility
                 
                 debugLog('Gas limit: ' + gasLimit);
