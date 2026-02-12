@@ -829,6 +829,54 @@
 status.innerHTML = '✅ Intent posted! <a href="https://testnet.monadvision.com/tx/' + txHash + '" target="_blank" style="color: #10b981; text-decoration: underline;">View Transaction</a>';
                     btn.disabled = false;
                     btn.innerHTML = '🔄 Post Another Intent';
+                    // Show mock agent bids for demo
+                    const agentsGrid = document.getElementById('agentsGrid');
+                    agentsGrid.innerHTML = '';
+                    
+                    // Simulate 3 agents analyzing and bidding
+                    const mockAgents = [
+                        { name: 'Conservative Agent 🛡️', strategy: 'Value Optimizer', fee: '0.24%', output: (parseFloat(amount) * 5 * 0.9976).toFixed(4), time: '2s' },
+                        { name: 'Contrarian Agent ⚡', strategy: 'Balanced Executor', fee: '0.36%', output: (parseFloat(amount) * 5 * 0.9964).toFixed(4), time: '4s' },
+                        { name: 'Whale Agent 🐋', strategy: 'Speed Demon', fee: '0.36%', output: (parseFloat(amount) * 5 * 0.9964).toFixed(4), time: '1s' }
+                    ];
+                    
+                    setTimeout(() => {
+                        mockAgents.forEach((agent, i) => {
+                            setTimeout(() => {
+                                const card = document.createElement('div');
+                                card.className = 'agent-card';
+                                card.innerHTML = `
+                                    <div class="agent-header">
+                                        <div class="agent-name">${agent.name}</div>
+                                        <div class="agent-badge">Active</div>
+                                    </div>
+                                    <div class="agent-stats">
+                                        <div class="stat">
+                                            <div class="stat-label">Strategy</div>
+                                            <div class="stat-value">${agent.strategy}</div>
+                                        </div>
+                                        <div class="stat">
+                                            <div class="stat-label">Fee</div>
+                                            <div class="stat-value">${agent.fee}</div>
+                                        </div>
+                                        <div class="stat">
+                                            <div class="stat-label">Output</div>
+                                            <div class="stat-value">${agent.output} USDC</div>
+                                        </div>
+                                        <div class="stat">
+                                            <div class="stat-label">Response Time</div>
+                                            <div class="stat-value">${agent.time}</div>
+                                        </div>
+                                    </div>
+                                `;
+                                agentsGrid.appendChild(card);
+                            }, i * 1500);
+                        });
+                        
+                        setTimeout(() => {
+                            status.innerHTML = '✅ Intent posted! 3 agents analyzed. <a href="https://testnet.monadvision.com/tx/' + txHash + '" target="_blank" style="color: #10b981; text-decoration: underline;">View Transaction</a>';
+                        }, 5000);
+                    }, 500);
 return;
                 }
                 
