@@ -59,7 +59,7 @@ contract IntentAuction {
 
 ### Frontend (Web3 + Ethers.js)
 - Wallet connection (MetaMask, Rainbow, Coinbase Wallet)
-- Real-time MON/ETH/USDC price feeds from CoinGecko
+- Real-time MON/ETH/USDC price feeds from **CoinGecko API**
 - Intent posting with automatic/manual gas handling
 - Event listening for agent bids
 - Monadscan transaction verification
@@ -85,6 +85,16 @@ User Posts Intent → Agents Detect Event → Calculate Bids → Submit On-Chain
 4. **Agents compete**: Calculate optimal bids with different strategies
 5. **Best bid wins**: After 5-minute auction period
 6. **Cross-chain execution**: Winner delivers USDC on Ethereum via LayerZero
+
+### 🤖 Agent Strategies
+
+| Agent | Strategy | Fee | Execution Time | Best For |
+|-------|----------|-----|----------------|----------|
+| **Conservative** | Value Optimizer | 0.24% | 180s | Price-sensitive users |
+| **Contrarian** | Balanced Executor | 0.36% | 60s | Power traders |
+| **Whale** | Speed Demon | 0.36% | 60s | Large instant swaps |
+
+All agents use **real-time pricing** and calculate optimal routing.
 
 ---
 
