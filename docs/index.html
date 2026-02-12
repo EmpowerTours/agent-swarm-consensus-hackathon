@@ -510,7 +510,7 @@
             'function submitBid(uint256 intentId, uint256 promisedOut, uint256 fee) external payable',
             'function executeIntent(uint256 intentId, uint256 bidIndex) external',
             'function bids(uint256 intentId, uint256 index) external view returns (address agent, uint256 promisedOut, uint256 fee, uint256 timestamp)',
-            'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn)',
+            'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn, uint32 destChain)',
             'event BidSubmitted(uint256 indexed intentId, address indexed agent, uint256 promisedOut, uint256 fee)',
             'event IntentExecuted(uint256 indexed intentId, address indexed winner, uint256 payout)'
         ];
@@ -835,13 +835,16 @@
                 // Fallback: Parse logs manually (mobile wallets)
                 if (!intentId && receipt.logs && receipt.logs.length > 0) {
                     try {
-                        // IntentPosted event signature: IntentPosted(uint256,address,address,address,uint32,uint256,uint256)
-                        const intentPostedTopic = ethers.utils.id('IntentPosted(uint256,address,address,address,uint32,uint256,uint256)');
+                        // IntentPosted event signature: IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn, uint32 destChain)
+                        const intentPostedTopic = ethers.utils.id('IntentPosted(uint256,address,uint256,uint32)');
+                        debugLog('Looking for event topic: ' + intentPostedTopic);
                         const log = receipt.logs.find(l => l.topics[0] === intentPostedTopic);
                         if (log) {
                             // First indexed parameter (intentId) is in topics[1]
                             intentId = ethers.BigNumber.from(log.topics[1]);
                             debugLog('✓ Parsed intentId from logs: ' + intentId.toString());
+                        } else {
+                            debugLog('⚠ IntentPosted event not found in logs');
                         }
                     } catch (parseError) {
                         debugLog('⚠ Log parsing error: ' + parseError.message);
