@@ -828,12 +828,24 @@
                 const minOut = ethers.utils.parseEther('0'); // No minimum for demo
                 
                 debugLog('Calling contract.postIntent()...');
+                
+                // Explicitly set gas to avoid estimation failure (Rainbow/Monad RPC issue)
+                const gasLimit = 150000; // More than enough for postIntent
+                const gasPrice = await provider.getGasPrice().catch(() => ethers.utils.parseUnits('100', 'gwei'));
+                
+                debugLog('Gas limit: ' + gasLimit);
+                debugLog('Gas price: ' + ethers.utils.formatUnits(gasPrice, 'gwei') + ' gwei');
+                
                 const tx = await contract.postIntent(
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
                     ETH_CHAIN_ID,
                     minOut,
-                    { value: amountWei }
+                    { 
+                        value: amountWei,
+                        gasLimit: gasLimit,
+                        gasPrice: gasPrice
+                    }
                 );
                 
                 const txHash = tx.hash;
