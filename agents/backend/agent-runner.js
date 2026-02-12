@@ -62,18 +62,46 @@ class IntentAgent {
     async start() {
         console.log(`[${this.name}] Starting to listen for intents...`);
         
-        // Listen for new intents (with destChain parameter)
-        this.contract.on('IntentPosted', async (intentId, user, amountIn, destChain, event) => {
-            console.log(`\n[${this.name}] 🔔 New intent detected!`);
-            console.log(`  Intent ID: ${intentId.toString()}`);
-            console.log(`  User: ${user}`);
-            console.log(`  Amount: ${ethers.utils.formatEther(amountIn)} MON`);
-            console.log(`  Dest Chain: ${destChain}`);
+        // Monad WebSocket doesn't support eth_subscribe, use polling instead
+        let lastBlock = await this.provider.getBlockNumber();
+        console.log(`[${this.name}] Starting from block ${lastBlock}`);
+        
+        const pollInterval = 2000; // Poll every 2 seconds
+        
+        const poll = async () => {
+            try {
+                const currentBlock = await this.provider.getBlockNumber();
+                
+                if (currentBlock > lastBlock) {
+                    // Check for events in new blocks
+                    const events = await this.contract.queryFilter(
+                        'IntentPosted',
+                        lastBlock + 1,
+                        currentBlock
+                    );
+                    
+                    for (const event of events) {
+                        console.log(`\n[${this.name}] 🔔 New intent detected!`);
+                        console.log(`  Intent ID: ${event.args.intentId.toString()}`);
+                        console.log(`  User: ${event.args.user}`);
+                        console.log(`  Amount: ${ethers.utils.formatEther(event.args.amountIn)} MON`);
+                        console.log(`  Dest Chain: ${event.args.destChain}`);
+                        console.log(`  Block: ${event.blockNumber}`);
+                        
+                        await this.handleIntent(event.args.intentId, event.args.amountIn);
+                    }
+                    
+                    lastBlock = currentBlock;
+                }
+            } catch (error) {
+                console.error(`[${this.name}] Poll error:`, error.message);
+            }
             
-            await this.handleIntent(intentId, amountIn);
-        });
-
-        console.log(`[${this.name}] ✅ Listening for IntentPosted events...`);
+            setTimeout(poll, pollInterval);
+        };
+        
+        poll();
+        console.log(`[${this.name}] ✅ Polling for events every ${pollInterval}ms...`);
     }
 
     async handleIntent(intentId, amountIn) {
