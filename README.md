@@ -170,7 +170,7 @@ Whale:        $4.98 USDC (0.36% fee, 60s)
 
 ## 📹 Demo Video
 
-[![Watch Demo](https://img.shields.io/badge/▶️%20Watch%20Demo-YouTube%20Shorts-red?style=for-the-badge[Link will be added after recording]logo=youtube)](https://www.youtube.com/shorts/IQybuWz6--U)
+[![Watch Demo](https://img.shields.io/badge/▶️_Watch_Demo-YouTube_Shorts-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/shorts/IQybuWz6--U)
 
 ---
 
