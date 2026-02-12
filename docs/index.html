@@ -827,6 +827,8 @@
                 if (!intentId) {
                     // Success! Show transaction link
 status.innerHTML = '✅ Intent posted! <a href="https://testnet.monadvision.com/tx/' + txHash + '" target="_blank" style="color: #10b981; text-decoration: underline;">View Transaction</a>';
+                    btn.disabled = false;
+                    btn.innerHTML = '🔄 Post Another Intent';
 return;
                 }
                 
