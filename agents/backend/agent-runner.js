@@ -3,10 +3,10 @@ require('dotenv').config();
 
 // Contract details
 const CONTRACT_ADDRESS = '0xa3D01411b8331fCcD0Da3011575082361fb97839';
-const MONAD_RPC = process.env.MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz';
+const MONAD_RPC = process.env.MONAD_RPC_URL || 'wss://testnet-rpc.monad.xyz'; // WebSocket for real-time events!
 
 const CONTRACT_ABI = [
-    'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn)',
+    'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn, uint32 destChain)',
     'function submitBid(uint256 intentId, uint256 promisedOut, uint256 fee) external payable',
     'function intents(uint256) external view returns (address user, uint256 amountIn, address tokenIn, address tokenOut, uint32 destChain, uint256 minOut, uint256 deadline, bool executed, address winner)'
 ];
@@ -40,22 +40,24 @@ class IntentAgent {
     constructor(name, config) {
         this.name = name;
         this.config = config;
-        this.provider = new ethers.providers.JsonRpcProvider(MONAD_RPC);
+        this.provider = new ethers.providers.WebSocketProvider(MONAD_RPC);
         this.wallet = new ethers.Wallet(config.privateKey, this.provider);
         this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.wallet);
         
         console.log(`[${this.name}] Initialized with wallet: ${this.wallet.address}`);
+        console.log(`[${this.name}] Using WebSocket: ${MONAD_RPC}`);
     }
 
     async start() {
         console.log(`[${this.name}] Starting to listen for intents...`);
         
-        // Listen for new intents
-        this.contract.on('IntentPosted', async (intentId, user, amountIn, event) => {
+        // Listen for new intents (with destChain parameter)
+        this.contract.on('IntentPosted', async (intentId, user, amountIn, destChain, event) => {
             console.log(`\n[${this.name}] 🔔 New intent detected!`);
             console.log(`  Intent ID: ${intentId.toString()}`);
             console.log(`  User: ${user}`);
             console.log(`  Amount: ${ethers.utils.formatEther(amountIn)} MON`);
+            console.log(`  Dest Chain: ${destChain}`);
             
             await this.handleIntent(intentId, amountIn);
         });
