@@ -694,6 +694,16 @@
                 });
                 debugLog('✓ Switched to Monad Testnet');
                 
+                // CRITICAL: Recreate provider after network switch
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                    debugLog('✓ Provider recreated after network switch');
+                } catch (e) {
+                    debugLog('⚠ Could not recreate provider: ' + e.message);
+                }
+                
                 // Update UI
                 const networkBadge = document.getElementById('networkBadge');
                 networkBadge.textContent = 'Monad Testnet';
@@ -725,6 +735,16 @@
                         });
                         
                         debugLog('✓ Monad Testnet added successfully!');
+                        
+                        // CRITICAL: Recreate provider after adding network
+                        try {
+                            provider = new ethers.providers.Web3Provider(window.ethereum);
+                            signer = provider.getSigner();
+                            contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                            debugLog('✓ Provider recreated after adding network');
+                        } catch (e) {
+                            debugLog('⚠ Could not recreate provider: ' + e.message);
+                        }
                         
                         // Update UI
                         const networkBadge = document.getElementById('networkBadge');
