@@ -810,45 +810,43 @@
                 debugLog('Contract address: ' + CONTRACT_ADDRESS);
                 debugLog('Amount: ' + amount + ' MON');
                 
-                // Recreate provider/signer to avoid stale provider issues (Rainbow wallet bug)
-                debugLog('Recreating provider...');
-                try {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    signer = provider.getSigner();
-                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                    debugLog('✓ Provider refreshed');
-                } catch (refreshError) {
-                    debugLog('⚠ Provider refresh failed: ' + refreshError.message, true);
-                    throw new Error('Failed to refresh provider: ' + refreshError.message);
-                }
-                
                 // Post intent to smart contract
                 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
                 const ETH_CHAIN_ID = 1;
                 const minOut = ethers.utils.parseEther('0'); // No minimum for demo
                 
-                debugLog('Calling contract.postIntent()...');
+                debugLog('Preparing transaction...');
                 
-                // Explicitly set gas to avoid estimation failure (Rainbow/Monad RPC issue)
-                const gasLimit = 300000; // Increased gas limit for Monad
-                const gasFee = ethers.utils.parseUnits('100', 'gwei'); // Hardcode for Rainbow
-                
-                debugLog('Gas limit: ' + gasLimit);
-                debugLog('Gas fee: 100 gwei (EIP-1559)');
-                
-                // Use EIP-1559 gas params for Rainbow compatibility
-                const tx = await contract.postIntent(
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS,
-                    ETH_CHAIN_ID,
-                    minOut,
-                    { 
-                        value: amountWei,
-                        gasLimit: gasLimit,
-                        maxFeePerGas: gasFee,
-                        maxPriorityFeePerGas: gasFee
-                    }
-                );
+                // Try with automatic gas estimation first, fallback to manual
+                let tx;
+                try {
+                    debugLog('Attempting with auto gas...');
+                    tx = await contract.postIntent(
+                        ZERO_ADDRESS,
+                        ZERO_ADDRESS,
+                        ETH_CHAIN_ID,
+                        minOut,
+                        { value: amountWei }
+                    );
+                } catch (gasError) {
+                    debugLog('Auto gas failed, trying manual gas...', true);
+                    
+                    const gasLimit = 300000;
+                    const gasFee = ethers.utils.parseUnits('100', 'gwei');
+                    
+                    tx = await contract.postIntent(
+                        ZERO_ADDRESS,
+                        ZERO_ADDRESS,
+                        ETH_CHAIN_ID,
+                        minOut,
+                        { 
+                            value: amountWei,
+                            gasLimit: gasLimit,
+                            maxFeePerGas: gasFee,
+                            maxPriorityFeePerGas: gasFee
+                        }
+                    );
+                }
                 
                 const txHash = tx.hash;
                 debugLog('✓ TX Hash: ' + txHash);
