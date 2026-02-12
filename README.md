@@ -28,7 +28,7 @@ Traditional DEX swaps are inefficient:
 
 ## 🎬 Live Demo
 
-**🌐 [Try Live Demo](https://empowertours.github.io/agent-swarm-consensus-hackathon/)** • **📹 [Watch Demo Video](https://www.youtube.com/shorts/IQybuWz6--U)**
+**🌐 [Try Live Demo](https://empowertours.github.io/agent-swarm-consensus-hackathon/)** • **📹 [Watch Demo Video](https://www.youtube.com/playlist?list=PLeNFKEy2QDyFtM-UxwKISJIiJw1PS1JQZ)**
 
 Click **Start Auction** and watch 3 AI agents compete in real-time! 🚀
 
@@ -170,7 +170,7 @@ Whale:        $4.98 USDC (0.36% fee, 60s)
 
 ## 📹 Demo Video
 
-[![Watch Demo](https://img.shields.io/badge/▶️_Watch_Demo-YouTube_Shorts-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/shorts/IQybuWz6--U)
+[![Watch Demo](https://img.shields.io/badge/▶️_Watch_Demo-YouTube_Playlist-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/playlist?list=PLeNFKEy2QDyFtM-UxwKISJIiJw1PS1JQZ)
 
 ---
 
