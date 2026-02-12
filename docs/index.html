@@ -831,11 +831,12 @@
                 
                 // Explicitly set gas to avoid estimation failure (Rainbow/Monad RPC issue)
                 const gasLimit = 300000; // Increased gas limit for Monad
-                const gasPrice = ethers.utils.parseUnits('100', 'gwei'); // Hardcode for Rainbow compatibility
+                const gasFee = ethers.utils.parseUnits('100', 'gwei'); // Hardcode for Rainbow
                 
                 debugLog('Gas limit: ' + gasLimit);
-                debugLog('Gas price: 100 gwei (hardcoded)');
+                debugLog('Gas fee: 100 gwei (EIP-1559)');
                 
+                // Use EIP-1559 gas params for Rainbow compatibility
                 const tx = await contract.postIntent(
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
@@ -844,7 +845,8 @@
                     { 
                         value: amountWei,
                         gasLimit: gasLimit,
-                        gasPrice: gasPrice
+                        maxFeePerGas: gasFee,
+                        maxPriorityFeePerGas: gasFee
                     }
                 );
                 
