@@ -828,24 +828,32 @@
                         minOut,
                         { value: amountWei }
                     );
+                    debugLog('✓ Transaction sent');
                 } catch (gasError) {
-                    debugLog('Auto gas failed, trying manual gas...', true);
+                    debugLog('Auto gas failed: ' + (gasError.reason || gasError.message), true);
+                    debugLog('Trying manual gas...', true);
                     
-                    const gasLimit = 300000;
-                    const gasFee = ethers.utils.parseUnits('100', 'gwei');
-                    
-                    tx = await contract.postIntent(
-                        ZERO_ADDRESS,
-                        ZERO_ADDRESS,
-                        ETH_CHAIN_ID,
-                        minOut,
-                        { 
-                            value: amountWei,
-                            gasLimit: gasLimit,
-                            maxFeePerGas: gasFee,
-                            maxPriorityFeePerGas: gasFee
-                        }
-                    );
+                    try {
+                        const gasLimit = 300000;
+                        const gasFee = ethers.utils.parseUnits('100', 'gwei');
+                        
+                        tx = await contract.postIntent(
+                            ZERO_ADDRESS,
+                            ZERO_ADDRESS,
+                            ETH_CHAIN_ID,
+                            minOut,
+                            { 
+                                value: amountWei,
+                                gasLimit: gasLimit,
+                                maxFeePerGas: gasFee,
+                                maxPriorityFeePerGas: gasFee
+                            }
+                        );
+                        debugLog('✓ Transaction sent with manual gas');
+                    } catch (manualError) {
+                        debugLog('Manual gas also failed: ' + (manualError.reason || manualError.message), true);
+                        throw manualError; // Re-throw to be caught by outer try-catch
+                    }
                 }
                 
                 const txHash = tx.hash;
