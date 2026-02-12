@@ -521,13 +521,12 @@
             whale: { name: 'Whale Agent', strategy: 'SPEEDY', feePercent: 0.36, executionTime: 60 }
         };
         
-        let provider, signer, contract;
+        let provider = null;
+        let signer = null; 
+        let contract = null;
         let connectedAccount = null;
         let useMobileMode = false; // Fallback for when ethers.js fails
         let ethersReady = false;
-        let provider = null;
-        let signer = null;
-        let contract = null;
         
         // Wait for ethers.js to load
         function waitForEthers() {
