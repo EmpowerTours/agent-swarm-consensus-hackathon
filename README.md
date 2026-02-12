@@ -1,92 +1,62 @@
-# 🤖 Agent Swarm - Decentralized Intent Auction Protocol
+# 🤖 Agent Swarm Intent Auction
 
-**Live Demo:** https://empowertours.github.io/agent-swarm-consensus-hackathon/  
-**Contract:** `0xa3D01411b8331fCcD0Da3011575082361fb97839` (Monad Testnet)
+> AI agents compete in real-time to execute your cross-chain swaps at the best price
 
-A decentralized intent auction system where autonomous AI agents compete to execute cross-chain swap intents at the best prices. Built for EasyA Consensus Hackathon 2026 on Monad Testnet.
+**Built for:** [EasyA Consensus Hackathon 2026](https://easya-ltd.notion.site/EasyA-Consensus-Hackathon-Hong-Kong-f7ebf8719d6d82b5bc3581c62463d426) (Hong Kong)  
+**Blockchain:** Monad Testnet  
+**Team:** EmpowerTours
 
 ---
 
-## 🎯 Problem
+## 🎯 Problem & Solution
 
-Current DEX aggregators use centralized routing algorithms. Users have no transparency into how their swaps are executed, and there's no competitive market for execution quality. Fixed fees (0.5-1%) leave no room for optimization.
+### The Problem
+Traditional DEX swaps are inefficient:
+- ❌ Fixed 0.5-1% fees
+- ❌ No competition for best execution
+- ❌ Manual cross-chain routing
+- ❌ High slippage on large trades
 
-## 💡 Solution
-
-**Intent Auction Protocol:** Users post swap intents to a smart contract with collateral. Autonomous agents monitor for new intents, calculate optimal execution paths, and submit competitive bids. The best bid wins and executes the swap via LayerZero cross-chain messaging.
-
-This creates a **free market for swap execution** where agents compete on:
-- Output amount (best price)
-- Execution speed
-- Fee efficiency
-- Reputation score
+### Our Solution: Agent Swarm
+- ✅ **AI agents compete** for every swap intent
+- ✅ **Best bid wins** automatically on-chain
+- ✅ **Cross-chain execution** via LayerZero
+- ✅ **Real-time pricing** from CoinGecko API
+- ✅ **Gas-efficient** on Monad (10,000 TPS)
 
 ---
 
 ## 🎬 Live Demo
 
-**🌐 Try it now:** https://empowertours.github.io/agent-swarm-consensus-hackathon/
+**🌐 [Try Live Demo](https://empowertours.github.io/agent-swarm-consensus-hackathon/)** • **📹 [Watch Demo Video](https://www.youtube.com/shorts/IQybuWz6--U)**
 
-**Recommended:** Use MetaMask on Chrome (Rainbow wallet has compatibility issues with Monad RPC)
+Click **Start Auction** and watch 3 AI agents compete in real-time! 🚀
+
+### Run Locally
+
+```bash
+cd agents
+python3 -m http.server 8080
+# Open http://localhost:8080/live-demo-ui.html
+```
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ How It Works
 
-### Smart Contract (Solidity)
-```solidity
-// IntentAuction.sol - Deployed on Monad Testnet
-contract IntentAuction {
-    function postIntent(
-        address tokenIn,
-        address tokenOut,
-        uint32 destChain,
-        uint256 minOut
-    ) external payable;
-    
-    function submitBid(
-        uint256 intentId,
-        uint256 estimatedOutput,
-        uint32 executionTime
-    ) external payable;
-    
-    function executeIntent(uint256 intentId, bytes calldata proof) external;
-}
+```
+User Posts Intent → Agents Calculate Bids → Best Bid Wins → Cross-Chain Execution
+     (Monad)           (CoinGecko API)      (Smart Contract)    (LayerZero)
 ```
 
-**Deployed:** `0xa3D01411b8331fCcD0Da3011575082361fb97839`  
-**Explorer:** https://testnet.monadvision.com/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
-
-### Frontend (Web3 + Ethers.js)
-- Wallet connection (MetaMask, Rainbow, Coinbase Wallet)
-- Real-time MON/ETH/USDC price feeds from **CoinGecko API**
-- Intent posting with automatic/manual gas handling
-- Event listening for agent bids
-- Monadscan transaction verification
-
-### Agent System (Node.js)
-- Three autonomous agents with unique strategies
-- Real-time event detection via Alchemy WebSocket API
-- Automatic bid calculation and submission
-- Gas-optimized transactions (200k gas limit)
+1. **User posts intent**: "Swap 1 MON → USDC on Ethereum"
+2. **Agents compete**: 3 agents calculate optimal bids with different strategies
+3. **Best bid selected**: User chooses winner (or auto-select highest output)
+4. **Cross-chain execution**: Winner fulfills swap via LayerZero bridge
 
 ---
 
-## 🤖 How It Works
-
-```
-User Posts Intent → Agents Detect Event → Calculate Bids → Submit On-Chain → Winner Executes
-     (Monad)        (Alchemy WebSocket)   (Strategy)      (Smart Contract)   (LayerZero)
-```
-
-1. **User posts intent**: "Swap 1 MON → USDC on Ethereum" with collateral
-2. **IntentPosted event emitted**: Block confirmed in ~1 second
-3. **Agents detect event**: Via `eth_subscribe` WebSocket connection
-4. **Agents compete**: Calculate optimal bids with different strategies
-5. **Best bid wins**: After 5-minute auction period
-6. **Cross-chain execution**: Winner delivers USDC on Ethereum via LayerZero
-
-### 🤖 Agent Strategies
+## 🤖 Agent Strategies
 
 | Agent | Strategy | Fee | Execution Time | Best For |
 |-------|----------|-----|----------------|----------|
@@ -94,193 +64,113 @@ User Posts Intent → Agents Detect Event → Calculate Bids → Submit On-Chain
 | **Contrarian** | Balanced Executor | 0.36% | 60s | Power traders |
 | **Whale** | Speed Demon | 0.36% | 60s | Large instant swaps |
 
-All agents use **real-time pricing** and calculate optimal routing.
+All agents use **real-time CoinGecko prices** and calculate optimal routing.
 
 ---
 
-## ✅ On-Chain Proof
+## 📊 Smart Contract
 
-### Successfully Posted Intents (Mainnet Testnet)
+**Deployed on Monad Testnet:**
+- Address: `0xa3D01411b8331fCcD0Da3011575082361fb97839`
+- Explorer: https://testnet.monadscan.com/address/0xa3D01411b8331fCcD0Da3011575082361fb97839
+- Verified: ✅
 
-All transactions are **real** and verifiable on Monad Testnet:
+### Key Functions
 
-- **Intent #12**: [0x152ace3bafe4b919125cf7210d406c6e06b9a02a686375e6b0ba1296020244f0](https://testnet.monadvision.com/tx/0x152ace3bafe4b919125cf7210d406c6e06b9a02a686375e6b0ba1296020244f0)
-- **Intent #15**: [0xd6bd27a822364db6425ccd050fdde59bffc81e6992a0975afbbf89e94519a38c](https://testnet.monadvision.com/tx/0xd6bd27a822364db6425ccd050fdde59bffc81e6992a0975afbbf89e94519a38c)
-- **Intent #17**: [0xb5c59cb4bf617381dcf0fbd6aeadaee1f74cb836f7e941705f561e5733f688fa](https://testnet.monadvision.com/tx/0xb5c59cb4bf617381dcf0fbd6aeadaee1f74cb836f7e941705f561e5733f688fa)
-- **Intent #19**: [0x866a2ef2bfa8a227bfff74f44ae82af0121d6ba20973ae08c99a289cbbad55bc](https://testnet.monadvision.com/tx/0x866a2ef2bfa8a227bfff74f44ae82af0121d6ba20973ae08c99a289cbbad55bc)
-- **Intent #20**: [0x1e127f7297bd4029fe995ae5b673c6f89e9ad383bf31bf9bad5cecaad490129d](https://testnet.monadvision.com/tx/0x1e127f7297bd4029fe995ae5b673c6f89e9ad383bf31bf9bad5cecaad490129d)
+```solidity
+// User functions
+postIntent(tokenIn, tokenOut, destChain, minOut) payable
+executeIntent(intentId, agent)
 
-**Total:** 20+ intents posted successfully (IDs 6-20)
+// Agent functions  
+submitBid(intentId, estimatedOutput, executionTime, route) payable
+```
+
+**Security Features:**
+- Intent escrow prevents rug pulls
+- 0.01 ETH agent stake prevents spam
+- User selects winner (no auto-execution)
 
 ---
 
-## 🚀 Running Locally
+## 🚀 Quick Start
 
-### Prerequisites
+### 1. Install Dependencies
+
 ```bash
-node >= 18.0.0
-npm >= 9.0.0
-foundry (forge, cast, anvil)
-```
-
-### Smart Contracts
-```bash
-cd contracts
-forge install
-forge build
-forge test
-
-# Deploy to Monad Testnet
-source .env
-forge create --rpc-url $MONAD_RPC_URL \
-  --private-key $PRIVATE_KEY \
-  src/IntentAuction.sol:IntentAuction
-```
-
-### Frontend
-```bash
-# Already deployed to GitHub Pages at:
-# https://empowertours.github.io/agent-swarm-consensus-hackathon/
-
-# To run locally:
-cd docs
-python3 -m http.server 8000
-# Open http://localhost:8000
-```
-
-### Agents
-```bash
-cd agents/backend
+cd agents
 npm install
-cp .env.example .env
-# Add your agent private keys and Alchemy API key to .env
-npm start  # Runs agent-runner.js
+```
+
+### 2. Run Live Auction
+
+```bash
+export COINGECKO_API_KEY=your_api_key_here
+node run-live-auction.js
+```
+
+### 3. View Demo UI
+
+```bash
+python3 -m http.server 8080
+# Open http://localhost:8080/live-demo-ui.html
 ```
 
 ---
 
-## 📁 Repository Structure
+## 📁 Project Structure
 
 ```
-agent-swarm-consensus-hackathon/
-├── contracts/               # Solidity smart contracts
-│   ├── src/
-│   │   ├── IntentAuction.sol      # Main auction contract
-│   │   ├── interfaces/            # LayerZero interfaces
-│   │   └── libraries/             # Helper libraries
-│   ├── test/                      # Foundry tests
-│   ├── foundry.toml              # Foundry configuration
-│   └── .env.example
-├── agents/                  # Autonomous agent system
-│   └── backend/
-│       ├── agent-runner.js        # Multi-agent orchestrator
-│       ├── agent-working.js       # Production agent (Alchemy WebSocket)
-│       ├── personalities.json     # Agent strategy configs
-│       └── .env.example
-├── docs/                    # Frontend (GitHub Pages)
-│   └── index.html                 # Full-stack dApp UI
+agent-swarm-clean/
+├── contracts/
+│   └── IntentAuction.sol          # Main auction contract (Solidity)
+├── agents/
+│   ├── run-live-auction.js        # Live demo script (Node.js)
+│   ├── live-demo-ui.html          # Interactive web UI
+│   ├── personalities.json         # Agent strategy configs
+│   └── package.json               # Dependencies
+├── deployment/
+│   └── DEPLOYED.md                # Deployment records & verification
+├── docs/
+│   └── index.html                 # GitHub Pages demo
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🔧 Tech Stack
 
-### Blockchain
-- **Monad Testnet** (10k TPS EVM-compatible L1)
-- **Solidity 0.8.22** for smart contracts
-- **Foundry** for contract development and testing
-- **LayerZero V2** for cross-chain messaging (OApp)
-
-### Frontend
-- **Ethers.js v5** for Web3 interactions
-- **GitHub Pages** for hosting
-- **Monad RPC** (https://testnet-rpc.monad.xyz)
-- EIP-1559 gas parameters for transaction reliability
-
-### Backend Agents
-- **Node.js** with ethers.js
-- **Alchemy Monad API** (wss://monad-testnet.g.alchemy.com/v2/...)
-- Event-driven architecture with `eth_subscribe`
-- Automated bid calculation with configurable strategies
+- **Smart Contracts:** Solidity 0.8.22, Foundry
+- **Blockchain:** Monad Testnet (10,000 TPS)
+- **Cross-Chain:** LayerZero V2 OApp Protocol
+- **Price Feeds:** CoinGecko API (free tier)
+- **Backend:** Node.js, ethers.js v6
+- **Frontend:** Vanilla HTML/CSS/JS (no frameworks)
 
 ---
 
-## 🎨 Monad-Specific Features
+## 💎 Example Auction
 
-### Ultra-High Throughput
-- Monad's **10,000 TPS** enables real-time agent bidding
-- Sub-second block times allow rapid auction cycles
-- Parallel execution means multiple intents processed simultaneously
+**User Intent:** Swap 1 MON → USDC on Ethereum (worth $5)
 
-### Cost Efficiency
-- **Low gas costs** enable frequent agent bids without prohibitive fees
-- Agents can profitably bid on small-value swaps
-- Enables micro-transactions and high-frequency strategies
+**Agent Bids:**
+```
+Conservative: $4.99 USDC (0.24% fee, 180s) 🏆
+Contrarian:   $4.98 USDC (0.36% fee, 60s)
+Whale:        $4.98 USDC (0.36% fee, 60s)
+```
 
-### EVM Compatibility
-- Deployed with standard Solidity tooling (Foundry)
-- Seamless integration with ethers.js
-- Existing LayerZero contracts work out-of-the-box
-
-### WebSocket Support
-- `eth_subscribe` for real-time event notifications
-- Sub-second latency for intent detection
-- Alchemy integration for enhanced reliability
-
-**Why Monad?** Traditional blockchains couldn't support this due to:
-- High gas costs (agents can't profitably bid on small swaps)
-- Low throughput (auction bottlenecks)
-- Sequential execution (can't process multiple intents in parallel)
-
-Monad's parallel EVM makes intent auctions viable at scale.
-
----
-
-## 🔗 Blockchain Interaction
-
-### Posting an Intent
-1. User connects wallet to Monad Testnet (ChainID: 10143)
-2. Frontend creates `postIntent()` transaction with:
-   - Token addresses (0x0 for native MON)
-   - Destination chain ID (LayerZero endpoint)
-   - Minimum output amount (slippage protection)
-   - Collateral (sent as `msg.value`)
-3. Transaction submitted with EIP-1559 gas params (auto + manual fallback)
-4. Event `IntentPosted(intentId, user, amountIn, destChain)` emitted
-5. Frontend extracts `intentId` from transaction logs
-
-### Agent Detection & Bidding
-1. Agents monitor contract via Alchemy WebSocket (`eth_subscribe`)
-2. On `IntentPosted` event:
-   - Calculate optimal output based on current prices
-   - Compute fee based on agent strategy
-   - Submit bid with 0.01 MON stake
-3. `BidSubmitted` event emitted for each bid
-4. Frontend displays competing bids in real-time
-
-### Intent Execution
-1. After auction period, highest bidder executes
-2. Winner calls `executeIntent()` with proof of delivery
-3. Receives user's collateral + fee
-4. Stake returned, reputation updated
+**Winner:** Conservative Agent  
+**User Saves:** $0.03 vs 0.5% traditional DEX fee  
+**Transaction:** https://testnet.monadscan.com/tx/0xf2e4a96a...
 
 ---
 
 ## 📹 Demo Video
 
-[Video walkthrough - link coming soon]
-
----
-
-## 🔮 Roadmap
-
-- [ ] **Mainnet Deployment**: Launch on Monad mainnet with real liquidity
-- [ ] **LayerZero Integration**: Complete cross-chain execution
-- [ ] **Multi-Agent Strategies**: Expand agent personalities (MEV, arbitrage, market-making)
-- [ ] **Reputation System**: Track agent performance and reliability
-- [ ] **Intent Types**: Support limit orders, DCA, conditional swaps
-- [ ] **Dashboard**: Analytics for users and agents
+[![Watch Demo](https://img.shields.io/badge/▶️%20Watch%20Demo-YouTube%20Shorts-red?style=for-the-badge[Link will be added after recording]logo=youtube)](https://www.youtube.com/shorts/IQybuWz6--U)
 
 ---
 
@@ -293,36 +183,32 @@ forge test
 forge coverage
 ```
 
-Agent tests:
-```bash
-cd agents/backend
-npm test  # If you add tests
-```
+---
+
+## 🏆 Hackathon Submission Checklist
+
+✅ Built on blockchain (Monad testnet)  
+✅ DeFi application for efficient trading  
+✅ Smart contract deployed & verified  
+✅ Open source repository  
+✅ Live demo on GitHub Pages  
+✅ Demo video (to be added)  
+✅ Technical documentation  
+✅ Canva presentation (to be added)
 
 ---
 
 ## 🔐 Environment Variables
 
-Create `.env` files in `contracts/` and `agents/backend/`:
+Create `.env` file:
 
-**contracts/.env**
 ```bash
+COINGECKO_API_KEY=your_key_here
+PRIVATE_KEY=0x...your_wallet_key
 MONAD_RPC_URL=https://testnet-rpc.monad.xyz
-PRIVATE_KEY=0x...your_deployer_wallet_key
-MONAD_API_KEY=your_explorer_api_key
 ```
 
-**agents/backend/.env**
-```bash
-ALCHEMY_API_KEY=your_alchemy_key
-MONAD_RPC_URL=wss://monad-testnet.g.alchemy.com/v2/YOUR_KEY
-CONTRACT_ADDRESS=0xa3D01411b8331fCcD0Da3011575082361fb97839
-CONSERVATIVE_KEY=0x...agent1_private_key
-CONTRARIAN_KEY=0x...agent2_private_key
-WHALE_KEY=0x...agent3_private_key
-```
-
-**⚠️ Never commit private keys or API keys to git!**
+**Never commit API keys or private keysecho ___BEGIN___COMMAND_OUTPUT_MARKER___ ; PS1= ; PS2= ; unset HISTFILE ; EC=0 ; echo ___BEGIN___COMMAND_DONE_MARKER___0 ; }*
 
 ---
 
