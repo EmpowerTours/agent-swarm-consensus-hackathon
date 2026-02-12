@@ -44,6 +44,17 @@ class IntentAgent {
         this.wallet = new ethers.Wallet(config.privateKey, this.provider);
         this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.wallet);
         
+        // WebSocket error handlers
+        this.provider._websocket.on('error', (error) => {
+            console.error(`[${this.name}] WebSocket error:`, error.message);
+        });
+        this.provider._websocket.on('close', () => {
+            console.log(`[${this.name}] ⚠️  WebSocket closed`);
+        });
+        this.provider._websocket.on('open', () => {
+            console.log(`[${this.name}] ✅ WebSocket connected`);
+        });
+        
         console.log(`[${this.name}] Initialized with wallet: ${this.wallet.address}`);
         console.log(`[${this.name}] Using WebSocket: ${MONAD_RPC}`);
     }
