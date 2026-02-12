@@ -896,11 +896,14 @@
                     message: error.message,
                     code: error.code,
                     data: error.data,
-                    reason: error.reason
+                    reason: error.reason,
+                    stack: error.stack
                 });
                 
                 debugLog('❌ Transaction failed: ' + error.message, true);
+                if (error.code) debugLog('Error code: ' + error.code, true);
                 if (error.reason) debugLog('Reason: ' + error.reason, true);
+                if (error.data) debugLog('Data: ' + JSON.stringify(error.data), true);
                 
                 status.className = 'status active error';
                 
