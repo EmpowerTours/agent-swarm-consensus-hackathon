@@ -821,11 +821,35 @@
                 const receipt = await tx.wait();
                 debugLog('✓ Transaction confirmed in block ' + receipt.blockNumber);
                 
-                // Extract intent ID from logs
-                const intentId = receipt.events?.find(e => e.event === 'IntentPosted')?.args?.intentId;
+                // Extract intent ID from logs (with fallback for mobile wallets)
+                let intentId;
+                
+                // Try parsed events first (desktop wallets)
+                if (receipt.events && receipt.events.length > 0) {
+                    const intentEvent = receipt.events.find(e => e.event === 'IntentPosted');
+                    if (intentEvent && intentEvent.args) {
+                        intentId = intentEvent.args.intentId;
+                    }
+                }
+                
+                // Fallback: Parse logs manually (mobile wallets)
+                if (!intentId && receipt.logs && receipt.logs.length > 0) {
+                    try {
+                        // IntentPosted event signature: IntentPosted(uint256,address,address,address,uint32,uint256,uint256)
+                        const intentPostedTopic = ethers.utils.id('IntentPosted(uint256,address,address,address,uint32,uint256,uint256)');
+                        const log = receipt.logs.find(l => l.topics[0] === intentPostedTopic);
+                        if (log) {
+                            // First indexed parameter (intentId) is in topics[1]
+                            intentId = ethers.BigNumber.from(log.topics[1]);
+                            debugLog('✓ Parsed intentId from logs: ' + intentId.toString());
+                        }
+                    } catch (parseError) {
+                        debugLog('⚠ Log parsing error: ' + parseError.message);
+                    }
+                }
                 
                 if (!intentId) {
-                    throw new Error('Could not extract intent ID from transaction');
+                    throw new Error('Could not extract intent ID from transaction. Please check Monadscan: ' + txHash);
                 }
                 
                 debugLog('✓ Intent ID: ' + intentId.toString());
