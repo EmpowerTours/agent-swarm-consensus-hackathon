@@ -525,6 +525,9 @@
         let connectedAccount = null;
         let useMobileMode = false; // Fallback for when ethers.js fails
         let ethersReady = false;
+        let provider = null;
+        let signer = null;
+        let contract = null;
         
         // Wait for ethers.js to load
         function waitForEthers() {
@@ -796,10 +799,17 @@
             status.textContent = '⏳ Waiting for transaction confirmation...';
             
             try {
+                // Validate contract is initialized
+                if (!contract) {
+                    throw new Error('Contract not initialized - please reconnect wallet');
+                }
+                
                 const amount = document.getElementById('amountInput').value;
                 const amountWei = ethers.utils.parseEther(amount);
                 
                 debugLog('💻 Sending transaction via ethers.js');
+                debugLog('Contract address: ' + CONTRACT_ADDRESS);
+                debugLog('Amount: ' + amount + ' MON');
                 
                 // Post intent to smart contract
                 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
