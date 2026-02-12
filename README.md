@@ -284,6 +284,23 @@ Monad's parallel EVM makes intent auctions viable at scale.
 
 ---
 
+## 🧪 Testing
+
+Smart contract tests:
+```bash
+cd contracts
+forge test
+forge coverage
+```
+
+Agent tests:
+```bash
+cd agents/backend
+npm test  # If you add tests
+```
+
+---
+
 ## 🔐 Environment Variables
 
 Create `.env` files in `contracts/` and `agents/backend/`:
