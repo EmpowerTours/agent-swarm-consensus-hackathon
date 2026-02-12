@@ -810,11 +810,24 @@
                 debugLog('Contract address: ' + CONTRACT_ADDRESS);
                 debugLog('Amount: ' + amount + ' MON');
                 
+                // Recreate provider/signer to avoid stale provider issues (Rainbow wallet bug)
+                debugLog('Recreating provider...');
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                    debugLog('✓ Provider refreshed');
+                } catch (refreshError) {
+                    debugLog('⚠ Provider refresh failed: ' + refreshError.message, true);
+                    throw new Error('Failed to refresh provider: ' + refreshError.message);
+                }
+                
                 // Post intent to smart contract
                 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
                 const ETH_CHAIN_ID = 1;
                 const minOut = ethers.utils.parseEther('0'); // No minimum for demo
                 
+                debugLog('Calling contract.postIntent()...');
                 const tx = await contract.postIntent(
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
