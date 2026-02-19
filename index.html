@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Swarm - Intent Auction</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #eee;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* ── Header ── */
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 2.6em; color: #fff; text-shadow: 0 0 20px rgba(102,126,234,0.8); }
+        .header p { opacity: 0.8; margin-top: 8px; }
+
+        /* ── Stats bar ── */
+        .stats-bar {
+            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-item { flex: 1; min-width: 100px; text-align: center; }
+        .stat-item .val { font-size: 1.5em; font-weight: 700; color: #a78bfa; }
+        .stat-item .lbl { font-size: 0.75em; color: #888; text-transform: uppercase; margin-top: 2px; }
+
+        .relay-dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; background: #888; margin-right: 6px;
+            vertical-align: middle;
+        }
+        .relay-dot.live { background: #10b981; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes bidPop { 0% { transform:scale(1); } 50% { transform:scale(1.03); } 100% { transform:scale(1); } }
+
+        /* ── Wallet bar ── */
+        .wallet-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.07); border-radius: 12px;
+            padding: 14px 20px; margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .network-badge {
+            padding: 6px 14px; border-radius: 20px; font-size: 0.85em;
+            font-weight: 600; background: #374151; color: #9ca3af;
+        }
+        .network-badge.ok { background: #065f46; color: #6ee7b7; }
+        .network-badge.wrong { background: #7f1d1d; color: #fca5a5; }
+        .connect-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; border-radius: 10px;
+            cursor: pointer; font-weight: 600; font-size: 0.95em;
+            transition: all 0.2s;
+        }
+        .connect-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+
+        /* ── Grid layout ── */
+        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+        /* ── Cards ── */
+        .card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card h3 { font-size: 1.1em; color: #c4b5fd; margin-bottom: 16px; }
+
+        /* ── Post intent form ── */
+        .intent-card { background: linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2)); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8em; color: #9ca3af; margin-bottom: 4px; }
+        .form-group input {
+            width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+            color: #fff; font-size: 1em;
+        }
+        .form-group .static-val {
+            padding: 10px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            font-size: 1em; color: #a78bfa; font-weight: 600;
+        }
+        .post-btn {
+            width: 100%; padding: 16px; font-size: 1.1em; font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; border-radius: 12px; cursor: pointer;
+            transition: all 0.2s; margin-top: 6px;
+        }
+        .post-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(102,126,234,0.5); }
+        .post-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Status ── */
+        .status-msg {
+            margin-top: 14px; padding: 12px 16px; border-radius: 8px;
+            font-size: 0.9em; display: none; animation: slideIn 0.3s ease;
+        }
+        .status-msg.show { display: block; }
+        .status-msg.info { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+        .status-msg.ok   { background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+        .status-msg.err  { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+
+        /* ── Countdown ── */
+        .countdown-bar {
+            display: none; background: rgba(255,255,255,0.05);
+            border-radius: 10px; padding: 14px 18px; margin-top: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .countdown-bar.show { display: block; }
+        .countdown-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .countdown-label { font-size: 0.8em; color: #9ca3af; }
+        .countdown-time { font-size: 1.4em; font-weight: 700; color: #f59e0b; font-variant-numeric: tabular-nums; }
+        .countdown-progress { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .countdown-fill { height: 100%; background: linear-gradient(90deg, #667eea, #f59e0b); transition: width 1s linear; }
+
+        /* ── Agent bids grid ── */
+        .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; margin-top: 16px; }
+
+        .agent-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 16px; opacity: 0.4;
+            transition: all 0.4s; position: relative;
+        }
+        .agent-card.bidding { opacity: 1; animation: bidPop 0.4s ease; border-color: rgba(167,139,250,0.4); }
+        .agent-card.winner { opacity: 1; border: 2px solid #f59e0b; background: rgba(245,158,11,0.1); }
+
+        .agent-name { font-weight: 700; color: #e2e8f0; margin-bottom: 4px; font-size: 0.95em; }
+        .agent-strategy { font-size: 0.75em; color: #9ca3af; margin-bottom: 12px; }
+        .agent-bid-val { font-size: 1.3em; font-weight: 700; color: #a78bfa; }
+        .agent-bid-lbl { font-size: 0.7em; color: #6b7280; }
+        .winner-badge {
+            position: absolute; top: -8px; right: 12px;
+            background: #f59e0b; color: #000; padding: 3px 10px;
+            border-radius: 10px; font-size: 0.7em; font-weight: 800;
+        }
+
+        /* ── Winner box ── */
+        .winner-box {
+            display: none; background: linear-gradient(135deg,rgba(245,158,11,0.15),rgba(251,191,36,0.1));
+            border: 2px solid rgba(245,158,11,0.5); border-radius: 16px;
+            padding: 24px; text-align: center; margin-top: 20px; animation: slideIn 0.5s ease;
+        }
+        .winner-box.show { display: block; }
+        .winner-box h3 { font-size: 1.5em; color: #fbbf24; margin-bottom: 6px; }
+        .winner-savings { font-size: 2em; color: #10b981; font-weight: 800; margin: 12px 0; }
+        .winner-box a { color: #a78bfa; text-decoration: underline; font-size: 0.85em; }
+
+        /* ── Sidebar: History + Price feed ── */
+        .event-feed { max-height: 340px; overflow-y: auto; }
+        .event-feed::-webkit-scrollbar { width: 4px; }
+        .event-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        .event-item {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+            animation: slideIn 0.3s ease; font-size: 0.85em;
+        }
+        .event-item:last-child { border-bottom: none; }
+        .event-dot {
+            width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
+        }
+        .event-dot.intent  { background: #3b82f6; }
+        .event-dot.bid     { background: #8b5cf6; }
+        .event-dot.executed { background: #f59e0b; }
+
+        .event-text { color: #cbd5e1; line-height: 1.4; }
+        .event-time { font-size: 0.75em; color: #6b7280; margin-top: 2px; }
+
+        /* ── Price feed ── */
+        .price-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.9em; }
+        .price-row:last-child { border-bottom: none; }
+        .price-sym { color: #9ca3af; }
+        .price-val { color: #e2e8f0; font-weight: 600; }
+
+        /* ── Info setup box ── */
+        .info-setup {
+            background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 0.85em;
+        }
+        .info-setup strong { color: #93c5fd; }
+        .info-setup ul { margin: 8px 0 0 16px; color: #cbd5e1; }
+        .info-setup li { margin-bottom: 4px; }
+
+        .loading-spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            border-top-color: white; animation: spin 0.8s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🤖 Agent Swarm</h1>
+        <p>AI agents compete to fulfill your swap intents • Built on Monad Testnet</p>
+        <p style="font-size:0.8em;margin-top:4px;opacity:0.6;">EasyA Consensus Hackathon 2026</p>
+    </div>
+
+    <!-- Live Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="val" id="statIntents">–</div>
+            <div class="lbl">Intents Posted</div>
+        </div>
+        <div class="stat-item">
+            <div class="val" id="statBids">–</div>
+            <div class="lbl">Total Bids</div>
+        </div>
+        <div class="stat-item">
+            <div class="val" id="statExecuted">–</div>
+            <div class="lbl">Settled</div>
+        </div>
+        <div class="stat-item">
+            <div class="val" id="statWinner">–</div>
+            <div class="lbl">Top Agent</div>
+        </div>
+        <div class="stat-item" style="text-align:right;">
+            <div class="val" style="font-size:0.85em;">
+                <span class="relay-dot" id="relayDot"></span>
+                <span id="relayLabel">Relay</span>
+            </div>
+            <div class="lbl" id="relayBlock">block –</div>
+        </div>
+    </div>
+
+    <!-- Wallet Bar -->
+    <div class="wallet-bar">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="network-badge" id="networkBadge">Not Connected</span>
+            <span style="font-size:0.85em;color:#9ca3af;" id="walletAddress">–</span>
+        </div>
+        <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+
+    <!-- Setup Info (shown until connected) -->
+    <div class="info-setup" id="setupInfo">
+        <strong>Setup:</strong> Connect MetaMask or Rainbow to Monad Mainnet (ChainID 143 · RPC https://rpc.monad.xyz).
+        View contract on <a href="https://monadscan.com/address/0x735054d42cf974930C68B490B212321DF2154C59" target="_blank" style="color:#93c5fd;">MonadScan →</a>
+    </div>
+
+    <!-- Main grid -->
+    <div class="main-grid">
+
+        <!-- Left: Post Intent + Auction View -->
+        <div>
+
+            <!-- Post Intent Card -->
+            <div class="card intent-card">
+                <h3>💎 Post a Swap Intent</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount (MON)</label>
+                        <input type="number" id="amountInput" value="0.1" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Receive Token</label>
+                        <select id="tokenOutSelect" style="background:#1e1b4b;color:#e2e8f0;border:1px solid #4c1d95;border-radius:8px;padding:10px;width:100%;font-size:1em;">
+                            <option value="USDC">USDC</option>
+                            <option value="USDT0">USDT0</option>
+                            <option value="WETH">WETH</option>
+                            <option value="WBTC">WBTC</option>
+                            <option value="WMON">WMON</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Output <span id="minOutLabel" style="color:#a78bfa;">(USDC)</span></label>
+                        <input type="number" id="minOutInput" value="0" step="0.01" min="0" placeholder="0 = any">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>From</label>
+                        <div class="static-val">MON (native)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>To</label>
+                        <div class="static-val" id="toTokenLabel">USDC (Monad)</div>
+                    </div>
+                </div>
+                <button class="post-btn" id="startBtn" onclick="postIntent()" disabled>
+                    🚀 Post Intent to Contract
+                </button>
+
+                <div class="status-msg" id="statusMsg"></div>
+
+                <!-- Countdown timer (shows after posting) -->
+                <div class="countdown-bar" id="countdownBar">
+                    <div class="countdown-row">
+                        <span class="countdown-label">⏱ Auction closes in</span>
+                        <span class="countdown-time" id="countdownTime">5:00</span>
+                    </div>
+                    <div class="countdown-progress">
+                        <div class="countdown-fill" id="countdownFill" style="width:100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Bids -->
+            <div class="card">
+                <h3>🤖 Agent Bids</h3>
+                <div class="agents-grid" id="agentsGrid">
+                    <div class="agent-card"><div class="agent-name">The Value Optimizer</div><div class="agent-strategy">Conservative · 0.24% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
+                    <div class="agent-card"><div class="agent-name">The Balanced Executor</div><div class="agent-strategy">Contrarian · 0.30% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
+                    <div class="agent-card"><div class="agent-name">The Speed Demon</div><div class="agent-strategy">Whale · 0.36% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
+                </div>
+            </div>
+
+            <!-- Winner box -->
+            <div class="winner-box" id="winnerBox">
+                <h3>🏆 <span id="winnerName"></span> Won!</h3>
+                <div class="winner-savings" id="winnerOutput"></div>
+                <p style="color:#9ca3af;font-size:0.9em;" id="winnerDeliveryLabel">USDC to be delivered to you</p>
+                <p style="margin-top:10px;"><a id="winnerTxLink" href="#" target="_blank">View intent tx →</a></p>
+            </div>
+
+        </div>
+
+        <!-- Right sidebar -->
+        <div>
+
+            <!-- Price Feed -->
+            <div class="card">
+                <h3>📈 Live Prices</h3>
+                <div class="price-row"><span class="price-sym">MON</span><span class="price-val" id="monPrice">$–</span></div>
+                <div class="price-row"><span class="price-sym">ETH</span><span class="price-val" id="ethPrice">$–</span></div>
+                <div class="price-row"><span class="price-sym">USDC</span><span class="price-val" id="usdcPrice">$1.00</span></div>
+                <div style="font-size:0.7em;color:#6b7280;margin-top:8px;">via CoinGecko · refreshes 30s</div>
+            </div>
+
+            <!-- Event Feed -->
+            <div class="card">
+                <h3>⚡ Live Event Feed</h3>
+                <div class="event-feed" id="eventFeed">
+                    <div style="color:#6b7280;font-size:0.85em;text-align:center;padding:20px 0;">
+                        Connecting to relay…
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent intents -->
+            <div class="card">
+                <h3>📋 Recent Intents</h3>
+                <div class="event-feed" id="intentHistory">
+                    <div style="color:#6b7280;font-size:0.85em;text-align:center;padding:20px 0;">
+                        Loading…
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const CONTRACT_ADDRESS  = '0x735054d42cf974930C68B490B212321DF2154C59';
+const MONAD_CHAIN_ID    = '0x8F'; // 143 mainnet
+const RELAY_WS          = 'ws://3.144.30.149:3000';
+
+const TOKENS = {
+    USDC:  { address: '0x754704Bc059F8C67012fEd69BC8A327a5aafb603', symbol: 'USDC',  decimals: 6  },
+    USDT0: { address: '0xe7cd86e13AC4309349F30B3435a9d337750fC82D', symbol: 'USDT0', decimals: 6  },
+    WETH:  { address: '0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242', symbol: 'WETH',  decimals: 18 },
+    WBTC:  { address: '0x0555E30da8f98308EdB960aa94C0Db47230d2B9c', symbol: 'WBTC',  decimals: 8  },
+    WMON:  { address: '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A', symbol: 'WMON',  decimals: 18 },
+};
+
+const CONTRACT_ABI = [
+    'function postIntent(address tokenIn, address tokenOut, uint32 destChain, uint256 minOut, uint256 amountIn) external payable returns (uint256)',
+    'function submitBid(uint256 intentId, uint256 promisedOut, uint256 fee) external payable',
+    'function executeIntent(uint256 intentId, uint256 bidIndex) external',
+    'function executeWithBestBid(uint256 intentId) external',
+    'function claimRefund(uint256 intentId) external',
+    'event IntentPosted(uint256 indexed intentId, address indexed user, uint256 amountIn, address tokenIn, address tokenOut, uint32 destChain)',
+    'event BidSubmitted(uint256 indexed intentId, address indexed agent, uint256 promisedOut)',
+    'event IntentExecuted(uint256 indexed intentId, address indexed winner)',
+    'event DeliveryConfirmed(uint256 indexed intentId, address indexed agent, bytes32 txHash)'
+];
+
+const AGENT_ALIASES = {
+    '0x5df74df4d84687db6a80cfb6f46efffd7d8417da': 'The Value Optimizer',
+    '0xffd07b67a613c374551b4383a76b9e99a0efab00': 'The Balanced Executor',
+    '0x3ecc0bca71c8cfd10e26a05caea83cfe97f9c41a': 'The Speed Demon'
+};
+
+const ZERO = '0x0000000000000000000000000000000000000000';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let provider, signer, contract;
+let connectedAccount = null;
+let currentIntentId  = null;
+let currentDeadline  = null;
+let countdownTimer   = null;
+let prices           = { MON: 5, ETH: 2000, USDC: 1 };
+let wsRetries        = 0;
+let ws               = null;
+
+// ── Relay WebSocket ───────────────────────────────────────────────────────────
+function connectRelay() {
+    try {
+        ws = new WebSocket(RELAY_WS);
+
+        ws.onopen = function() {
+            wsRetries = 0;
+            document.getElementById('relayDot').classList.add('live');
+            document.getElementById('relayLabel').textContent = 'Relay Live';
+        };
+
+        ws.onmessage = function(e) {
+            try {
+                const msg = JSON.parse(e.data);
+                handleRelayMessage(msg);
+            } catch(_) {}
+        };
+
+        ws.onclose = function() {
+            document.getElementById('relayDot').classList.remove('live');
+            document.getElementById('relayLabel').textContent = 'Relay Off';
+            const delay = Math.min(30000, 2000 * Math.pow(2, wsRetries++));
+            setTimeout(connectRelay, delay);
+        };
+
+        ws.onerror = function() { ws.close(); };
+
+    } catch(e) {
+        document.getElementById('relayLabel').textContent = 'Relay N/A';
+    }
+}
+
+function handleRelayMessage(msg) {
+    switch(msg.type) {
+        case 'snapshot':
+            updateStats(msg.payload.stats);
+            if (msg.payload.events) msg.payload.events.reverse().forEach(renderEvent);
+            if (msg.payload.intents) renderIntentHistory(msg.payload.intents);
+            break;
+        case 'intent':
+            updateStats(null);
+            renderEvent({ type:'intent', data: msg.payload, timestamp: Date.now() });
+            appendIntentHistory(msg.payload);
+            document.getElementById('statIntents').textContent =
+                (parseInt(document.getElementById('statIntents').textContent)||0) + 1;
+            break;
+        case 'bid':
+            renderEvent({ type:'bid', data: msg.payload, timestamp: Date.now() });
+            document.getElementById('statBids').textContent =
+                (parseInt(document.getElementById('statBids').textContent)||0) + 1;
+            // Highlight on current auction
+            if (currentIntentId && msg.payload.intentId === currentIntentId.toString()) {
+                updateAgentBid(msg.payload);
+            }
+            break;
+        case 'executed':
+            renderEvent({ type:'executed', data: msg.payload, timestamp: Date.now() });
+            document.getElementById('statExecuted').textContent =
+                (parseInt(document.getElementById('statExecuted').textContent)||0) + 1;
+            if (currentIntentId && msg.payload.intentId === currentIntentId.toString()) {
+                showWinnerFromRelay(msg.payload);
+            }
+            break;
+    }
+}
+
+// ── Fetch stats from REST ─────────────────────────────────────────────────────
+async function fetchStats() {
+    try {
+        const r = await fetch('http://3.144.30.149:3001/stats');
+        if (!r.ok) return;
+        const s = await r.json();
+        updateStats(s);
+        document.getElementById('relayBlock').textContent = 'block ' + (s.lastBlock||'–');
+    } catch(_) {}
+}
+
+function updateStats(s) {
+    if (!s) return;
+    if (s.totalIntents !== undefined) document.getElementById('statIntents').textContent = s.totalIntents;
+    if (s.totalBids    !== undefined) document.getElementById('statBids').textContent    = s.totalBids;
+    if (s.totalExecuted!== undefined) document.getElementById('statExecuted').textContent= s.totalExecuted;
+    if (s.agentWins) {
+        const top = Object.entries(s.agentWins).sort((a,b)=>b[1]-a[1])[0];
+        if (top) document.getElementById('statWinner').textContent = top[0].split(' ').pop() + ' ×' + top[1];
+    }
+}
+
+// ── Event Feed ────────────────────────────────────────────────────────────────
+function renderEvent(ev) {
+    const feed = document.getElementById('eventFeed');
+    // Clear placeholder
+    if (feed.querySelector('div[style]')) feed.innerHTML = '';
+
+    const d = ev.data;
+    let text = '';
+    let dotClass = ev.type;
+
+    if (ev.type === 'intent') {
+        text = `Intent #${d.id} posted — ${parseFloat(d.amountIn).toFixed(3)} MON`;
+    } else if (ev.type === 'bid') {
+        const alias = d.alias || aliasOf(d.agent);
+        text = `${alias} bid ${parseFloat(d.promisedOut).toFixed(4)} USDC on #${d.intentId}`;
+    } else if (ev.type === 'executed') {
+        const alias = d.alias || aliasOf(d.winner);
+        text = `Intent #${d.intentId} settled → ${alias} won`;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'event-item';
+    const ago = timeSince(ev.timestamp);
+    item.innerHTML = `
+        <div class="event-dot ${dotClass}"></div>
+        <div>
+            <div class="event-text">${text}</div>
+            <div class="event-time">${ago}</div>
+        </div>`;
+    feed.insertBefore(item, feed.firstChild);
+
+    // Keep max 30
+    while (feed.children.length > 30) feed.removeChild(feed.lastChild);
+}
+
+// ── Intent History ────────────────────────────────────────────────────────────
+function renderIntentHistory(intents) {
+    const box = document.getElementById('intentHistory');
+    box.innerHTML = '';
+    intents.slice().reverse().slice(0,10).forEach(appendIntentHistory);
+}
+
+function appendIntentHistory(intent) {
+    const box = document.getElementById('intentHistory');
+    if (box.querySelector('div[style]')) box.innerHTML = '';
+
+    const status = intent.executed ? (intent.winner !== ZERO ? '✅ settled' : '🔄 executed') : '⏳ open';
+    const item = document.createElement('div');
+    item.className = 'event-item';
+    item.innerHTML = `
+        <div class="event-dot intent"></div>
+        <div>
+            <div class="event-text">#${intent.id} · ${parseFloat(intent.amountIn).toFixed(3)} MON · ${status}</div>
+            <div class="event-time">${intent.user ? intent.user.slice(0,8)+'…' : ''}</div>
+        </div>`;
+    box.insertBefore(item, box.firstChild);
+    while (box.children.length > 10) box.removeChild(box.lastChild);
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+function startCountdown(deadlineTs) {
+    currentDeadline = deadlineTs;
+    const total = 300; // 5 min
+    document.getElementById('countdownBar').classList.add('show');
+
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(function() {
+        const now = Math.floor(Date.now() / 1000);
+        const rem  = Math.max(0, deadlineTs - now);
+        const mm   = String(Math.floor(rem / 60)).padStart(2,'0');
+        const ss   = String(rem % 60).padStart(2,'0');
+        document.getElementById('countdownTime').textContent = mm + ':' + ss;
+        document.getElementById('countdownFill').style.width = (rem / total * 100) + '%';
+        if (rem === 0) {
+            clearInterval(countdownTimer);
+            document.getElementById('countdownTime').textContent = 'Closed';
+        }
+    }, 1000);
+}
+
+// ── Agent Cards ───────────────────────────────────────────────────────────────
+function updateAgentBid(bidData) {
+    const cards = document.querySelectorAll('.agent-card');
+    const alias = (bidData.alias || aliasOf(bidData.agent)).toLowerCase();
+
+    cards.forEach(function(card) {
+        const name = card.querySelector('.agent-name').textContent.toLowerCase();
+        if (name.includes(alias.split(' ')[1] || alias)) {
+            card.classList.add('bidding');
+            const valEl = card.querySelector('.agent-bid-val');
+            if (valEl) valEl.textContent = parseFloat(bidData.promisedOut).toFixed(4) + ' USDC';
+        }
+    });
+}
+
+function showWinnerFromRelay(data) {
+    const alias = data.alias || aliasOf(data.winner);
+
+    // Mark winner card
+    document.querySelectorAll('.agent-card').forEach(function(card) {
+        const name = card.querySelector('.agent-name').textContent.toLowerCase();
+        if (name.includes((alias.split(' ')[1]||'').toLowerCase())) {
+            card.classList.add('winner');
+            let badge = card.querySelector('.winner-badge');
+            if (!badge) { badge = document.createElement('div'); badge.className='winner-badge'; card.appendChild(badge); }
+            badge.textContent = '🏆 WINNER';
+        }
+    });
+
+    document.getElementById('winnerName').textContent = alias;
+    document.getElementById('winnerOutput').textContent = '→ USDC delivering…';
+    document.getElementById('winnerBox').classList.add('show');
+    if (countdownTimer) clearInterval(countdownTimer);
+}
+
+// ── Wallet ────────────────────────────────────────────────────────────────────
+async function connectWallet() {
+    if (!window.ethereum) {
+        alert('Please install MetaMask or Rainbow wallet.');
+        return;
+    }
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        connectedAccount = accounts[0];
+
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer   = provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId.toLowerCase() !== MONAD_CHAIN_ID.toLowerCase()) {
+            await switchToMonad();
+        } else {
+            setConnected();
+        }
+    } catch(e) {
+        if (e.code !== 4001) alert('Connection error: ' + e.message);
+    }
+}
+
+// Update all token labels when selector changes
+function updateTokenLabels(symbol) {
+    document.getElementById('minOutLabel').textContent = '(' + symbol + ')';
+    document.getElementById('toTokenLabel').textContent = symbol + ' (Monad)';
+    document.querySelectorAll('.bid-token-lbl').forEach(function(el) {
+        el.textContent = symbol + ' promised';
+    });
+    document.getElementById('winnerDeliveryLabel').textContent = symbol + ' to be delivered to you';
+}
+var tokenSelect = document.getElementById('tokenOutSelect');
+if (tokenSelect) {
+    tokenSelect.addEventListener('change', function() { updateTokenLabels(this.value); });
+}
+
+function setConnected() {
+    document.getElementById('networkBadge').textContent = 'Monad Mainnet';
+    document.getElementById('networkBadge').className = 'network-badge ok';
+    document.getElementById('walletAddress').textContent = connectedAccount.slice(0,6)+'…'+connectedAccount.slice(-4);
+    document.getElementById('connectBtn').textContent = 'Connected';
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('setupInfo').style.display = 'none';
+}
+
+async function switchToMonad() {
+    try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: MONAD_CHAIN_ID }] });
+        setConnected();
+    } catch(e) {
+        if (e.code === 4902) {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{ chainId: MONAD_CHAIN_ID, chainName: 'Monad Mainnet',
+                    nativeCurrency: { name:'Monad', symbol:'MON', decimals:18 },
+                    rpcUrls: ['https://rpc.monad.xyz'],
+                    blockExplorerUrls: ['https://monadscan.com'] }]
+            });
+            setConnected();
+        } else {
+            showStatus('Switch to Monad Mainnet in your wallet.', 'err');
+        }
+    }
+}
+
+// ── Post Intent ───────────────────────────────────────────────────────────────
+async function postIntent() {
+    if (!connectedAccount) { alert('Connect wallet first'); return; }
+
+    const amount    = document.getElementById('amountInput').value;
+    const minOutVal = document.getElementById('minOutInput').value || '0';
+    const amountWei = ethers.utils.parseEther(amount);
+    const minOutWei = ethers.utils.parseEther(minOutVal);
+
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spin"></span> Posting…';
+
+    // Reset UI
+    document.getElementById('winnerBox').classList.remove('show');
+    document.getElementById('countdownBar').classList.remove('show');
+    document.querySelectorAll('.agent-card').forEach(function(c) {
+        c.classList.remove('bidding','winner');
+        const v = c.querySelector('.agent-bid-val');
+        if (v) v.textContent = '–';
+        const b = c.querySelector('.winner-badge');
+        if (b) b.remove();
+    });
+
+    showStatus('Waiting for wallet confirmation…', 'info');
+
+    try {
+        const tokenKey    = document.getElementById('tokenOutSelect').value;
+        const tokenOut    = TOKENS[tokenKey].address;
+        const tx = await contract.postIntent(ZERO, tokenOut, 143, minOutWei, 0, { value: amountWei });
+        showStatus('<span class="loading-spin"></span> Confirming tx…', 'info');
+
+        const receipt = await tx.wait();
+        const event   = receipt.events?.find(function(e){ return e.event === 'IntentPosted'; });
+        currentIntentId = event?.args?.intentId;
+
+        const txHash = tx.hash;
+        const explorerUrl = 'https://monadscan.com/tx/' + txHash;
+
+        showStatus('✅ Intent posted! <a href="' + explorerUrl + '" target="_blank" style="color:#a78bfa;">View tx →</a>', 'ok');
+
+        // Start 5-min countdown
+        const deadline = Math.floor(Date.now() / 1000) + 300;
+        startCountdown(deadline);
+
+        // Listen for bids on the contract directly (complement relay)
+        if (currentIntentId) {
+            listenForBids(currentIntentId, txHash);
+        }
+
+        btn.innerHTML = '🔄 Post Another';
+        btn.disabled  = false;
+
+    } catch(e) {
+        let msg = e.message || 'Unknown error';
+        if (e.code === 4001 || msg.includes('rejected')) msg = 'Transaction rejected.';
+        else if (msg.includes('insufficient funds')) msg = 'Insufficient MON balance.';
+        showStatus('❌ ' + msg, 'err');
+        btn.innerHTML = '🚀 Post Intent to Contract';
+        btn.disabled  = false;
+    }
+}
+
+async function listenForBids(intentId, txHash) {
+    const filter  = contract.filters.BidSubmitted(intentId);
+    const received = {};
+
+    contract.on(filter, function(id, agent, promisedOut) {
+        const alias = aliasOf(agent);
+        const val   = parseFloat(ethers.utils.formatEther(promisedOut)).toFixed(4);
+        received[agent.toLowerCase()] = val;
+
+        updateAgentBid({ alias, promisedOut: val, intentId: id.toString() });
+
+        if (Object.keys(received).length >= 3) {
+            contract.removeAllListeners(filter);
+        }
+    });
+
+    // Remove listener after 6 min
+    setTimeout(function(){ contract.removeAllListeners(filter); }, 360000);
+}
+
+// ── Price Feed ────────────────────────────────────────────────────────────────
+async function fetchPrices() {
+    try {
+        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=monad,ethereum,usd-coin&vs_currencies=usd');
+        const d = await r.json();
+        prices.MON  = d.monad?.usd  || prices.MON;
+        prices.ETH  = d.ethereum?.usd || prices.ETH;
+        prices.USDC = d['usd-coin']?.usd || prices.USDC;
+
+        document.getElementById('monPrice').textContent  = '$' + prices.MON.toFixed(4);
+        document.getElementById('ethPrice').textContent  = '$' + prices.ETH.toLocaleString();
+        document.getElementById('usdcPrice').textContent = '$' + prices.USDC.toFixed(4);
+    } catch(_) {}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function aliasOf(addr) {
+    return AGENT_ALIASES[(addr||'').toLowerCase()] || (addr ? addr.slice(0,8)+'…' : 'Unknown');
+}
+
+function showStatus(html, type) {
+    const el = document.getElementById('statusMsg');
+    el.innerHTML = html;
+    el.className = 'status-msg show ' + type;
+}
+
+function timeSince(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    return Math.floor(s/3600) + 'h ago';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+    connectRelay();
+    fetchPrices();
+    fetchStats();
+    setInterval(fetchPrices, 30000);
+    setInterval(fetchStats,  5000);
+});
+</script>
+</body>
+</html>
