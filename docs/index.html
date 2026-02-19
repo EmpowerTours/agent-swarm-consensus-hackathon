@@ -251,7 +251,7 @@
     <!-- Setup Info (shown until connected) -->
     <div class="info-setup" id="setupInfo">
         <strong>Setup:</strong> Connect MetaMask or Rainbow to Monad Mainnet (ChainID 143 · RPC https://rpc.monad.xyz).
-        View contract on <a href="https://monadcan.com/address/0x735054d42cf974930C68B490B212321DF2154C59" target="_blank" style="color:#93c5fd;">MonadScan →</a>
+        View contract on <a href="https://monadscan.com/address/0x735054d42cf974930C68B490B212321DF2154C59" target="_blank" style="color:#93c5fd;">MonadScan →</a>
     </div>
 
     <!-- Main grid -->
@@ -674,7 +674,7 @@ async function switchToMonad() {
                 params: [{ chainId: MONAD_CHAIN_ID, chainName: 'Monad Mainnet',
                     nativeCurrency: { name:'Monad', symbol:'MON', decimals:18 },
                     rpcUrls: ['https://rpc.monad.xyz'],
-                    blockExplorerUrls: ['https://monadcan.com'] }]
+                    blockExplorerUrls: ['https://monadscan.com'] }]
             });
             setConnected();
         } else {
@@ -720,7 +720,7 @@ async function postIntent() {
         currentIntentId = event?.args?.intentId;
 
         const txHash = tx.hash;
-        const explorerUrl = 'https://monadcan.com/tx/' + txHash;
+        const explorerUrl = 'https://monadscan.com/tx/' + txHash;
 
         showStatus('✅ Intent posted! <a href="' + explorerUrl + '" target="_blank" style="color:#a78bfa;">View tx →</a>', 'ok');
 
