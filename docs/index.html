@@ -290,7 +290,7 @@
                     </div>
                     <div class="form-group">
                         <label>To</label>
-                        <div class="static-val">USDC (Ethereum)</div>
+                        <div class="static-val" id="toTokenLabel">USDC (Monad)</div>
                     </div>
                 </div>
                 <button class="post-btn" id="startBtn" onclick="postIntent()" disabled>
@@ -315,9 +315,9 @@
             <div class="card">
                 <h3>🤖 Agent Bids</h3>
                 <div class="agents-grid" id="agentsGrid">
-                    <div class="agent-card"><div class="agent-name">The Value Optimizer</div><div class="agent-strategy">Conservative · 0.24% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl">USDC promised</div></div>
-                    <div class="agent-card"><div class="agent-name">The Balanced Executor</div><div class="agent-strategy">Contrarian · 0.30% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl">USDC promised</div></div>
-                    <div class="agent-card"><div class="agent-name">The Speed Demon</div><div class="agent-strategy">Whale · 0.36% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl">USDC promised</div></div>
+                    <div class="agent-card"><div class="agent-name">The Value Optimizer</div><div class="agent-strategy">Conservative · 0.24% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
+                    <div class="agent-card"><div class="agent-name">The Balanced Executor</div><div class="agent-strategy">Contrarian · 0.30% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
+                    <div class="agent-card"><div class="agent-name">The Speed Demon</div><div class="agent-strategy">Whale · 0.36% fee</div><div class="agent-bid-val">–</div><div class="agent-bid-lbl bid-token-lbl">USDC promised</div></div>
                 </div>
             </div>
 
@@ -325,7 +325,7 @@
             <div class="winner-box" id="winnerBox">
                 <h3>🏆 <span id="winnerName"></span> Won!</h3>
                 <div class="winner-savings" id="winnerOutput"></div>
-                <p style="color:#9ca3af;font-size:0.9em;">USDC to be delivered to you</p>
+                <p style="color:#9ca3af;font-size:0.9em;" id="winnerDeliveryLabel">USDC to be delivered to you</p>
                 <p style="margin-top:10px;"><a id="winnerTxLink" href="#" target="_blank">View intent tx →</a></p>
             </div>
 
@@ -640,10 +640,19 @@ async function connectWallet() {
     }
 }
 
-// Update minOut label when token changes
-document.getElementById('tokenOutSelect') && document.getElementById('tokenOutSelect').addEventListener('change', function() {
-    document.getElementById('minOutLabel').textContent = '(' + this.value + ')';
-});
+// Update all token labels when selector changes
+function updateTokenLabels(symbol) {
+    document.getElementById('minOutLabel').textContent = '(' + symbol + ')';
+    document.getElementById('toTokenLabel').textContent = symbol + ' (Monad)';
+    document.querySelectorAll('.bid-token-lbl').forEach(function(el) {
+        el.textContent = symbol + ' promised';
+    });
+    document.getElementById('winnerDeliveryLabel').textContent = symbol + ' to be delivered to you';
+}
+var tokenSelect = document.getElementById('tokenOutSelect');
+if (tokenSelect) {
+    tokenSelect.addEventListener('change', function() { updateTokenLabels(this.value); });
+}
 
 function setConnected() {
     document.getElementById('networkBadge').textContent = 'Monad Mainnet';
@@ -703,7 +712,7 @@ async function postIntent() {
     try {
         const tokenKey    = document.getElementById('tokenOutSelect').value;
         const tokenOut    = TOKENS[tokenKey].address;
-        const tx = await contract.postIntent(ZERO, tokenOut, 1, minOutWei, 0, { value: amountWei });
+        const tx = await contract.postIntent(ZERO, tokenOut, 143, minOutWei, 0, { value: amountWei });
         showStatus('<span class="loading-spin"></span> Confirming tx…', 'info');
 
         const receipt = await tx.wait();
